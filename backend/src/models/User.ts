@@ -18,6 +18,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["candidate", "recruiter"],
       required: true,
+      default: "candidate",
     },
     company: { type: Schema.Types.ObjectId, ref: "Company" },
   },
