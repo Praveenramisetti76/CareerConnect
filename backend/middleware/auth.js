@@ -1,23 +1,25 @@
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
+import User from "../models/User.js";
 
-// Middleware: Authentication
-export const authentication = (req, res, next) => {
+export const authentication = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new AppError("Unauthorized: No token provided", 401);
+    return next(new AppError("Unauthorized: No token provided", 401));
   }
 
   const token = authHeader.split(" ")[1];
 
-  let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  } catch (err) {
-    throw new AppError("Unauthorized: Invalid token", 401);
-  }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-  req.user = decoded; // Assumes the token contains { id, role }
-  next();
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) throw new AppError("Unauthorized: User not found", 401);
+
+    req.user = user; // Now req.user._id is valid
+    next();
+  } catch (err) {
+    next(new AppError("Unauthorized: Invalid token", 401));
+  }
 };

@@ -33,6 +33,7 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
+    // Global role: determines if the user is a job seeker or recruiter
     role: {
       type: String,
       enum: ["candidate", "recruiter"],
@@ -61,9 +62,28 @@ const userSchema = new Schema(
     },
 
     isOpenToWork: { type: Boolean, default: false },
-    isProfileComplete: { type: Boolean, default: false },
 
     company: { type: Schema.Types.ObjectId, ref: "Company" },
+
+    // Role inside the company (separate from account role)
+    companyRole: {
+      type: String,
+      enum: ["employee", "recruiter", "admin"],
+    },
+
+    // When requesting to join a company
+    companyJoinRequest: {
+      company: { type: Schema.Types.ObjectId, ref: "Company" },
+      roleRequested: {
+        type: String,
+        enum: ["employee", "recruiter"],
+      },
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected"],
+        default: "pending",
+      },
+    },
 
     resetPasswordToken: String,
     resetPasswordExpires: Date,
@@ -75,7 +95,7 @@ const userSchema = new Schema(
   }
 );
 
-// Virtuals
+// Virtuals for connections
 userSchema.virtual("connections", {
   ref: "Connection",
   localField: "_id",

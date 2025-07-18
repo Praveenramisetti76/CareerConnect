@@ -1,26 +1,25 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { authentication } from "../../middleware/auth.js";
 import {
   getProfile,
-  updateProfile, // You probably meant `updateProfile`
-  updateProfileAvatar, // same here
+  updateProfile,
+  updateProfileAvatar,
   deleteAvatar,
   deleteProfile,
+  updateResume,
+  deleteResume
 } from "../../controllers/user/profile.controller.js";
+import { uploadAvatar, uploadResume } from "../../middleware/multer.js";
 
 const router = Router();
 router.use(authentication);
+router.patch("/update/avatar", uploadAvatar.single("avatar"),updateProfileAvatar);
+router.patch("/update/resume", uploadResume.single("resume"),updateResume);
 
-router.get("/view", getProfile);
-router.put("/update", updateProfile);
-router.patch("/update-avatar", updateProfileAvatar);
-router.patch("/update-resume", (req, res) => {
-  res.status(501).json({ message: "Resume update route not implemented yet." });
-});
-router.delete("/delete-avatar", deleteAvatar);
-router.delete("/delete", deleteProfile);
-router.delete("/delete-resume", (req, res) => {
-  res.status(501).json({ message: "Resume delete route not implemented yet." });
-});
+router.get("/view", express.json(), getProfile);
+router.put("/update", express.json(), updateProfile);
+router.delete("/delete/avatar", express.json(), deleteAvatar);
+router.delete("/delete", express.json(), deleteProfile);
+router.delete("/delete/resume", express.json(), deleteResume);
 
 export default router;

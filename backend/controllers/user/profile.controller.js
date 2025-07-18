@@ -28,7 +28,7 @@ export const getProfile = async (req, res) => {
 };
 
 export const updateProfileAvatar = async (req, res) => {
-  if (!req.user?.id) throw new AppError("Unauthorized access", 401);
+  if (!req.user.id) throw new AppError("Unauthorized access", 401);
   if (!req.file) throw new AppError("Avatar not found", 400);
 
   const user = await catchAndWrap(
@@ -155,8 +155,10 @@ export const deleteProfile = async (req, res) => {
     404
   );
 
-  if (user.avatarPublicId) await cloudinary.uploader.destroy(user.avatarPublicId);
-  if (user.resumePublicId) await cloudinary.uploader.destroy(user.resumePublicId);
+  if (user.avatarPublicId)
+    await cloudinary.uploader.destroy(user.avatarPublicId);
+  if (user.resumePublicId)
+    await cloudinary.uploader.destroy(user.resumePublicId);
 
   await User.findByIdAndDelete(req.user.id);
 

@@ -10,7 +10,7 @@ import {
   logInSchema,
   resetPasswordParamsSchema,
   resetPasswordBodySchema,
-} from "../../zodSchema/auth.schema.js";
+} from "../../zodSchema/auth.validation.js";
 
 const registerUser = async (req, res) => {
   const result = signUpSchema.safeParse(req.body);
