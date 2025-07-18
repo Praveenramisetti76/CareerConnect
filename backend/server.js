@@ -5,7 +5,8 @@ import connectDB from "./config/connectDB.js";
 import helmet from "helmet";
 import authRoutes from "./routes/user/auth.routes.js";
 import profileRoutes from "./routes/user/profile.routes.js";
-import connectionRoutes from './routes/user/connections.routes.js'
+import connectionRoutes from "./routes/user/connections.routes.js";
+import companyRoutes from "./routes/recruiter/company.routes.js";
 dotenv.config();
 
 const app = express();
@@ -16,7 +17,8 @@ connectDB();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/connection", connectionRoutes)
+app.use("/api/connection", connectionRoutes);
+app.use("/api/company", companyRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

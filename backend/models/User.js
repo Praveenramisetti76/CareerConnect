@@ -71,20 +71,6 @@ const userSchema = new Schema(
       enum: ["employee", "recruiter", "admin"],
     },
 
-    // When requesting to join a company
-    companyJoinRequest: {
-      company: { type: Schema.Types.ObjectId, ref: "Company" },
-      roleRequested: {
-        type: String,
-        enum: ["employee", "recruiter"],
-      },
-      status: {
-        type: String,
-        enum: ["pending", "accepted", "rejected"],
-        default: "pending",
-      },
-    },
-
     resetPasswordToken: String,
     resetPasswordExpires: Date,
   },

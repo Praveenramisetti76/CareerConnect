@@ -1,9 +1,8 @@
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "../utils/AppError";
+// middleware/role.js
+import { AppError } from "../utils/AppError.js";
 
-export const role =
-  (...allowedRoles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
+export const role = (...allowedRoles) => {
+  return (req, res, next) => {
     if (!req.user) {
       throw new AppError("Unauthorized", 401);
     }
@@ -14,3 +13,4 @@ export const role =
 
     next();
   };
+};
