@@ -7,6 +7,9 @@ export interface IUser extends Document {
   role: "candidate" | "recruiter";
   company?: Types.ObjectId;
   connections?: Types.ObjectId[];
+
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -21,6 +24,9 @@ const userSchema = new Schema<IUser>(
       default: "candidate",
     },
     company: { type: Schema.Types.ObjectId, ref: "Company" },
+
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   {
     timestamps: true,
@@ -29,6 +35,7 @@ const userSchema = new Schema<IUser>(
   }
 );
 
+// Virtuals for connections & followers
 userSchema.virtual("connections", {
   ref: "Connection",
   localField: "_id",

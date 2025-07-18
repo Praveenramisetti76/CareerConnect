@@ -14,5 +14,14 @@ export const logInSchema = z.object({
     password: z.string()
 })
 
+export const resetPasswordParamsSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  id: z.string().regex(/^[a-f\d]{24}$/i, "Invalid user ID"),
+});
+
+export const resetPasswordBodySchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 export type registerInput = z.infer<typeof signUpSchema>
 export type logInInput = z.infer<typeof logInSchema>
