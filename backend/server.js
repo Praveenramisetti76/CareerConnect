@@ -8,6 +8,7 @@ import profileRoutes from "./routes/profile.routes.js";
 import connectionRoutes from "./routes/connections.routes.js";
 import companyRoutes from "./routes/company.routes.js";
 import jobRoutes from "./routes/job.routes.js";
+import articleRoutes from "./routes/article.routes.js";
 dotenv.config();
 
 const app = express();
@@ -21,6 +22,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/connection", connectionRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/job", jobRoutes);
+app.use("/api/article", articleRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

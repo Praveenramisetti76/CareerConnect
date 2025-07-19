@@ -130,5 +130,5 @@ companySchema.statics.defaultRoles = [
   },
 ];
 
-const Company = model("Company", companySchema);
-export default Company;
+const company = model("company", companySchema);
+export default company;
