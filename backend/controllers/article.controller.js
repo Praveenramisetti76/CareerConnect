@@ -28,20 +28,26 @@ export const createArticle = async (req, res) => {
   res.status(201).json(article);
 };
 
-export const getAllArticles = async (req, res) => {
+export const getMyArticles = async (req, res) => {
   const articles = await catchAndWrap(
-    () => Article.find().populate("author", "name email"),
-    "Failed to fetch articles"
+    () => Article.find({ author: req.user._id }),
+    "Failed to fetch your articles"
   );
 
   res.status(200).json(articles);
 };
 
-export const getMyArticles = async (req, res) => {
-  console.log("fuck you");
+export const getAllArticles = async (req, res) => {
+  const { filter, skip, limit, sort } = buildQueryOptions(req.query);
+
   const articles = await catchAndWrap(
-    () => Article.find({ author: req.user._id }),
-    "Failed to fetch your articles"
+    () =>
+      Article.find(filter)
+        .populate("author", "name email")
+        .skip(skip)
+        .limit(limit)
+        .sort(sort),
+    "Failed to fetch articles"
   );
 
   res.status(200).json(articles);

@@ -7,6 +7,77 @@ import {
   removeConnectionSchema,
 } from "../zodSchema/connections.validation.js";
 
+const searchUsersForConnection = async (req, res) => {
+  const search = req.query.search?.trim();
+  if (!search) throw new AppError("Search query is required", 400);
+
+  const currentUserId = req.user._id;
+
+  const users = await catchAndWrap(
+    () =>
+      User.find({
+        _id: { $ne: currentUserId },
+        $or: [
+          { name: new RegExp(search, "i") },
+          { headline: new RegExp(search, "i") },
+          { location: new RegExp(search, "i") },
+          { skills: { $elemMatch: { $regex: search, $options: "i" } } },
+        ],
+      }).select("name email avatarUrl headline location"),
+    "Failed to search users"
+  );
+
+  const userIds = users.map((u) => u._id);
+
+  const connections = await catchAndWrap(
+    () =>
+      Connection.find({
+        $or: [
+          { requester: currentUserId, recipient: { $in: userIds } },
+          { recipient: currentUserId, requester: { $in: userIds } },
+        ],
+      }),
+    "Failed to fetch connection statuses"
+  );
+
+  // Map connection statuses
+  const statusMap = new Map();
+
+  connections.forEach((conn) => {
+    const otherUserId =
+      conn.requester.toString() === currentUserId.toString()
+        ? conn.recipient.toString()
+        : conn.requester.toString();
+
+    if (conn.status === "accepted") {
+      statusMap.set(otherUserId, "accepted");
+    } else if (
+      conn.status === "pending" &&
+      conn.requester.toString() === currentUserId.toString()
+    ) {
+      statusMap.set(otherUserId, "pending_sent");
+    } else if (
+      conn.status === "pending" &&
+      conn.recipient.toString() === currentUserId.toString()
+    ) {
+      statusMap.set(otherUserId, "pending_received");
+    }
+  });
+
+  // Final response: user info + status
+  const results = users.map((user) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.avatarUrl,
+    headline: user.headline,
+    location: user.location,
+    status: statusMap.get(user._id.toString()) || "none",
+  }));
+
+  res.status(200).json({ success: true, results });
+};
+
 const sendConnectionRequest = async (req, res) => {
   const parsed = sendConnectionRequestSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -201,6 +272,7 @@ const removeConnection = async (req, res) => {
 };
 
 export {
+  searchUsersForConnection,
   sendConnectionRequest,
   acceptConnectionRequest,
   rejectConnectionRequest,

@@ -45,7 +45,6 @@ export const getAllCompanies = async (req, res) => {
   const { companyId } = req.params;
 
   if (companyId) {
-    // ── Fetch single company ──
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
       throw new AppError("Invalid company ID", 400);
     }
@@ -66,9 +65,10 @@ export const getAllCompanies = async (req, res) => {
     });
   }
 
-  // ── Fetch all companies ──
+  const filter = buildCompanyQuery(req.query);
+
   const companies = await catchAndWrap(
-    () => Company.find().select("-joinRequests"),
+    () => Company.find(filter).select("-joinRequests"),
     "Failed to fetch companies",
     500
   );
@@ -78,6 +78,7 @@ export const getAllCompanies = async (req, res) => {
     companies,
   });
 };
+
 
 export const updateCompany = async (req, res) => {
   const { companyId } = req.params;

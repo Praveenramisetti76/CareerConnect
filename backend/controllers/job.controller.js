@@ -1,7 +1,5 @@
-import express from "express";
 import Application from "../models/Application.js";
 import Job from "../models/Job.js";
-import User from "../models/User.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAndWrap } from "../utils/catchAndWrap.js";
 import {
@@ -17,6 +15,8 @@ import {
 } from "../zodSchema/job.validation.js";
 import Company from "../models/Company.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { jobOptions } from "../utils/queryOperations/jobOptions.js";
+
 export const applyToJob = async (req, res) => {
   const userId = req.user._id;
   const { jobId } = req.params;
@@ -280,12 +280,13 @@ export const updateApplicationStatus = async (req, res) => {
 };
 
 export const getJobPosts = async (req, res) => {
-  const parsed = getJobPostsSchema.safeParse({ params: req.params });
+  const parsed = getJobPostsSchema.safeParse({ params: req.params, query: req.query });
   if (!parsed.success) {
     throw new AppError("Validation failed", 400, parsed.error.errors);
   }
 
   const { jobId } = parsed.data.params;
+  const query = parsed.data.query;
 
   if (jobId) {
     const job = await catchAndWrap(
@@ -301,10 +302,12 @@ export const getJobPosts = async (req, res) => {
     });
   }
 
-  const jobs = await Job.find().populate("company", "name industry");
+  const filter = jobOptions(query);
+  const jobs = await Job.find(filter).populate("company", "name industry");
+
   res.status(200).json({
     success: true,
-    message: "All job posts fetched successfully",
+    message: "Filtered job posts fetched successfully",
     data: jobs,
   });
 };

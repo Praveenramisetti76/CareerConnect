@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authentication } from "../middleware/auth.js";
 import {
+  searchUsersForConnection,
   sendConnectionRequest,
   acceptConnectionRequest,
   rejectConnectionRequest,
@@ -15,6 +16,7 @@ const router = Router();
 
 router.use(authentication);
 
+router.get("/search", searchUsersForConnection);
 router.post("/request", sendConnectionRequest);
 router.patch("/accept", acceptConnectionRequest);
 router.patch("/reject/:requesterId", rejectConnectionRequest);
