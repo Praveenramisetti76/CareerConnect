@@ -5,7 +5,7 @@ const jobSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    requirements: { type: String },
+    requirements: [{ type: String }],
 
     company: {
       type: Schema.Types.ObjectId,

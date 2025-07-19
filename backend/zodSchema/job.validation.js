@@ -1,25 +1,13 @@
 import { z } from "zod";
 
-const salaryRangeSchema = z.object({
-  min: z.number().nonnegative().optional(),
-  max: z.number().nonnegative().optional(),
-}).refine(
-  (data) => (data.min === undefined || data.max === undefined || data.min <= data.max),
-  {
-    message: "Minimum salary must be less than or equal to maximum salary.",
-    path: ["min"],
-  }
-);
+const objectId = () =>
+  z.string().regex(/^[a-f\d]{24}$/, "Invalid ObjectId format");
+const postJobSchema = z.object({
+  title: z.string().min(2),
+  description: z.string().min(10),
+  requirements: z.array(z.string()).optional(),
 
-export const createJobSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  requirements: z.string().optional(),
-
-  companyName: z.string().min(1, "Company name is required"),
-  company: z.string().min(1, "Company ObjectId is required"),
-
-  location: z.string().min(1, "Location is required"),
+  location: z.string(),
   type: z.enum([
     "full-time",
     "part-time",
@@ -30,11 +18,98 @@ export const createJobSchema = z.object({
   ]),
 
   industry: z.string().optional(),
-  salaryRange: salaryRangeSchema.optional(),
+
+  salaryRange: z
+    .object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+    })
+    .optional(),
 
   applicationInstructions: z.string().optional(),
-  logoUrl: z.string().url("Invalid logo URL").optional(),
+  logoUrl: z.string().optional(),
   logoPublicId: z.string().optional(),
 });
 
-export const updateJobSchema = createJobSchema.partial(); // Allow partial for editing
+const applySchema = z.object({
+  resume: z.string().url("Resume must be a valid URL"),
+  coverLetter: z.string().optional(),
+});
+
+const statusUpdateSchema = z.object({
+  status: z.enum(["reviewed", "interview", "hired", "rejected"]),
+});
+
+export const getAllMyApplicationsSchema = z.object({
+  query: z.object({
+    status: z.enum(["pending", "accepted", "rejected"]).optional(),
+  }),
+});
+
+const getAllApplicationsSchema = z.object({
+  params: z.object({
+    jobId: z.string().length(24, "Invalid job ID"),
+  }),
+});
+
+const getJobStatusSchema = z.object({
+  params: z.object({
+    jobId: z.string().length(24, "Invalid job ID format"),
+  }),
+});
+
+const updateJobStatusSchema = z.object({
+  params: z.object({
+    companyId: z.string().min(1),
+    jobId: z.string().min(1),
+  }),
+  body: z.object({
+    status: z.enum(["active", "closed", "draft"]),
+  }),
+});
+
+const updateApplicationStatusSchema = z.object({
+  params: z.object({
+    companyId: z.string().min(1, "companyId is required"),
+    applicationId: z.string().min(1, "applicationId is required"),
+  }),
+  body: z.object({
+    status: z.enum(["applied", "reviewed", "interview", "hired", "rejected"]),
+  }),
+});
+
+const getJobPostsSchema = z.object({
+  params: z.object({
+    jobId: z
+      .string()
+      .regex(/^[a-f\d]{24}$/, "Invalid job ID format")
+      .optional(),
+  }),
+});
+
+const deleteJobSchema = z.object({
+  params: z.object({
+    companyId: objectId(),
+    jobId: objectId(),
+  }),
+});
+
+const deleteApplicationSchema = z.object({
+  params: z.object({
+    jobId: objectId(),
+    applicationId: objectId(),
+  }),
+});
+
+export {
+  postJobSchema,
+  applySchema,
+  statusUpdateSchema,
+  getJobStatusSchema,
+  getAllApplicationsSchema,
+  updateJobStatusSchema,
+  updateApplicationStatusSchema,
+  getJobPostsSchema,
+  deleteJobSchema,
+  deleteApplicationSchema,
+};

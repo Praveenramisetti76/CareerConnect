@@ -1,7 +1,7 @@
-import User from "../../models/User.js";
-import { catchAndWrap } from "../../utils/catchAndWrap.js";
-import { AppError } from "../../utils/AppError.js";
-import { cloudinary } from "../../config/cloudinary.js";
+import User from "../models/User.js";
+import { catchAndWrap } from "../utils/catchAndWrap.js";
+import { AppError } from "../utils/AppError.js";
+import { cloudinary } from "../config/cloudinary.js";
 
 const allowedFields = [
   "name",

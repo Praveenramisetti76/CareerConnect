@@ -1,11 +1,11 @@
-import { AppError } from "../../utils/AppError.js";
-import { catchAndWrap } from "../../utils/catchAndWrap.js";
-import Connection from "../../models/Connection.js";
+import { AppError } from "../utils/AppError.js";
+import { catchAndWrap } from "../utils/catchAndWrap.js";
+import Connection from "../models/Connection.js";
 import {
   sendConnectionRequestSchema,
   respondConnectionRequestSchema,
   removeConnectionSchema,
-} from "../../zodSchema/connections.validation.js";
+} from "../zodSchema/connections.validation.js";
 
 const sendConnectionRequest = async (req, res) => {
   const parsed = sendConnectionRequestSchema.safeParse(req.body);

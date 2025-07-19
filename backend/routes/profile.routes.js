@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { authentication } from "../../middleware/auth.js";
+import { authentication } from "../middleware/auth.js";
 import {
   getProfile,
   updateProfile,
@@ -7,14 +7,18 @@ import {
   deleteAvatar,
   deleteProfile,
   updateResume,
-  deleteResume
-} from "../../controllers/user/profile.controller.js";
-import { uploadAvatar, uploadResume } from "../../middleware/multer.js";
+  deleteResume,
+} from "../controllers/profile.controller.js";
+import { uploadAvatar, uploadResume } from "../middleware/multer.js";
 
 const router = Router();
 router.use(authentication);
-router.patch("/update/avatar", uploadAvatar.single("avatar"),updateProfileAvatar);
-router.patch("/update/resume", uploadResume.single("resume"),updateResume);
+router.patch(
+  "/update/avatar",
+  uploadAvatar.single("avatar"),
+  updateProfileAvatar
+);
+router.patch("/update/resume", uploadResume.single("resume"), updateResume);
 
 router.get("/view", express.json(), getProfile);
 router.put("/update", express.json(), updateProfile);

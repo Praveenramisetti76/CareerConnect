@@ -1,16 +1,16 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import User from "../../models/User.js";
-import { AppError } from "../../utils/AppError.js";
-import { signToken } from "../../utils/jwt.js";
-import { catchAndWrap } from "../../utils/catchAndWrap.js";
-import { sendPasswordReset } from "../../utils/sendEmail.js";
+import User from "../models/User.js";
+import { AppError } from "../utils/AppError.js";
+import { signToken } from "../utils/jwt.js";
+import { catchAndWrap } from "../utils/catchAndWrap.js";
+import { sendPasswordReset } from "../utils/sendEmail.js";
 import {
   signUpSchema,
   logInSchema,
   resetPasswordParamsSchema,
   resetPasswordBodySchema,
-} from "../../zodSchema/auth.validation.js";
+} from "../zodSchema/auth.validation.js";
 
 const registerUser = async (req, res) => {
   const result = signUpSchema.safeParse(req.body);

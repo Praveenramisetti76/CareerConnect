@@ -1,14 +1,14 @@
-import Company from "../../models/Company.js";
-import User from "../../models/User.js";
+import Company from "../models/Company.js";
+import User from "../models/User.js";
 import {
   createCompanySchema,
   updateCompanySchema,
   requestToJoinSchema,
   handleJoinRequestSchema,
   updateCompanyRoleSchema,
-} from "../../zodSchema/company.validation.js";
-import { AppError } from "../../utils/AppError.js";
-import { catchAndWrap } from "../../utils/catchAndWrap.js";
+} from "../zodSchema/company.validation.js";
+import { AppError } from "../utils/AppError.js";
+import { catchAndWrap } from "../utils/catchAndWrap.js";
 import mongoose from "mongoose";
 
 export const createCompany = async (req, res) => {

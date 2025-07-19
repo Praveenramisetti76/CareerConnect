@@ -3,10 +3,11 @@ import dotenv from "dotenv";
 import { errorHandler } from "./middleware/error.js";
 import connectDB from "./config/connectDB.js";
 import helmet from "helmet";
-import authRoutes from "./routes/user/auth.routes.js";
-import profileRoutes from "./routes/user/profile.routes.js";
-import connectionRoutes from "./routes/user/connections.routes.js";
-import companyRoutes from "./routes/recruiter/company.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
+import connectionRoutes from "./routes/connections.routes.js";
+import companyRoutes from "./routes/company.routes.js";
+import jobRoutes from "./routes/job.routes.js";
 dotenv.config();
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/connection", connectionRoutes);
 app.use("/api/company", companyRoutes);
+app.use("/api/job", jobRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
