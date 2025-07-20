@@ -31,4 +31,32 @@ const resumeStorage = new CloudinaryStorage({
   },
 });
 
-export { avatarStorage, resumeStorage, cloudinary };
+const companyLogoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: "company_logos",
+      allowed_formats: ["jpg", "jpeg", "png"],
+      transformation: [{ width: 400, height: 400, crop: "limit" }],
+    };
+  },
+});
+
+const companyCoverStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: "company_covers",
+      allowed_formats: ["jpg", "jpeg", "png"],
+      transformation: [{ width: 1200, height: 400, crop: "limit" }],
+    };
+  },
+});
+
+export {
+  avatarStorage,
+  resumeStorage,
+  cloudinary,
+  companyLogoStorage,
+  companyCoverStorage,
+};

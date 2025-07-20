@@ -1,5 +1,13 @@
 import multer from "multer";
-import { avatarStorage, resumeStorage } from "../config/cloudinary.js";
+
+import {
+  avatarStorage,
+  resumeStorage,
+  companyLogoStorage,
+  companyCoverStorage,
+} from "../config/cloudinary.js";
 
 export const uploadAvatar = multer({ storage: avatarStorage });
 export const uploadResume = multer({ storage: resumeStorage });
+export const uploadCompanyLogo = multer({ storage: companyLogoStorage });
+export const uploadCompanyCover = multer({ storage: companyCoverStorage });

@@ -1,4 +1,6 @@
+import { cloudinary } from "../config/cloudinary.js";
 import Company from "../models/Company.js";
+import { buildCompanyQuery } from "../utils/queryOperations/companyOptions.js";
 import User from "../models/User.js";
 import {
   createCompanySchema,
@@ -41,6 +43,48 @@ export const createCompany = async (req, res) => {
   });
 };
 
+export const uploadCompanyLogo = async (req, res) => {
+  const { companyId } = req.params;
+  if (!req.file) {
+    throw new AppError("No logo file uploaded", 400);
+  }
+  if (!companyId || !mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new AppError("Invalid company ID", 400);
+  }
+  const company = await catchAndWrap(
+    () => Company.findById(companyId),
+    "Failed to fetch company"
+  );
+  if (!company) throw new AppError("Company not found", 404);
+  // Remove old logo from cloudinary if exists
+  if (company.logoPublicId) {
+    await cloudinary.uploader.destroy(company.logoPublicId);
+  }
+  company.logo = req.file.path;
+  company.logoPublicId = req.file.filename || req.file.public_id;
+  await catchAndWrap(() => company.save(), "Failed to save logo");
+  res.status(200).json({ success: true, logo: company.logo });
+};
+
+// Upload company cover image
+export const uploadCompanyCover = async (req, res) => {
+  const { companyId } = req.params;
+  if (!req.file) {
+    throw new AppError("No cover image uploaded", 400);
+  }
+  if (!companyId || !mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new AppError("Invalid company ID", 400);
+  }
+  const company = await catchAndWrap(
+    () => Company.findById(companyId),
+    "Failed to fetch company"
+  );
+  if (!company) throw new AppError("Company not found", 404);
+  company.coverImage = req.file.path;
+  await catchAndWrap(() => company.save(), "Failed to save cover image");
+  res.status(200).json({ success: true, coverImage: company.coverImage });
+};
+
 export const getAllCompanies = async (req, res) => {
   const { companyId } = req.params;
 
@@ -66,9 +110,11 @@ export const getAllCompanies = async (req, res) => {
   }
 
   const filter = buildCompanyQuery(req.query);
+  const sort = req.query.sort === "newest" ? { createdAt: -1 } : {};
+  const limit = parseInt(req.query.limit) || 10;
 
   const companies = await catchAndWrap(
-    () => Company.find(filter).select("-joinRequests"),
+    () => Company.find(filter).select("-joinRequests").sort(sort).limit(limit),
     "Failed to fetch companies",
     500
   );
@@ -78,7 +124,6 @@ export const getAllCompanies = async (req, res) => {
     companies,
   });
 };
-
 
 export const updateCompany = async (req, res) => {
   const { companyId } = req.params;
@@ -180,7 +225,6 @@ export const requestToJoinCompany = async (req, res) => {
     message: "Join request submitted successfully",
   });
 };
-
 
 export const getJoinRequests = async (req, res) => {
   const { companyId } = req.params;

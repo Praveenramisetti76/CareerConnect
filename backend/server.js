@@ -9,12 +9,21 @@ import connectionRoutes from "./routes/connections.routes.js";
 import companyRoutes from "./routes/company.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 import articleRoutes from "./routes/article.routes.js";
+import cors from "cors";
+
 dotenv.config();
 
 const app = express();
 
 app.use(helmet());
 app.use(express.json());
+
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+
 connectDB();
 
 app.use("/api/auth", authRoutes);

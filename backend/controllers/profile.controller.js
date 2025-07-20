@@ -59,7 +59,18 @@ export const updateProfile = async (req, res) => {
   const updates = {};
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
-      updates[field] = req.body[field];
+      // Special handling for education array
+      if (field === "education" && Array.isArray(req.body.education)) {
+        updates.education = req.body.education.map((edu) => {
+          return {
+            ...edu,
+            startDate: edu.startDate ? new Date(edu.startDate) : undefined,
+            endDate: edu.endDate ? new Date(edu.endDate) : undefined,
+          };
+        });
+      } else {
+        updates[field] = req.body[field];
+      }
     }
   }
 

@@ -64,10 +64,6 @@ const companySchema = new Schema(
           trim: true,
           enum: ["admin", "recruiter", "employee"],
         },
-        permissions: {
-          type: [String],
-          default: [],
-        },
       },
     ],
 
@@ -101,34 +97,6 @@ const companySchema = new Schema(
   },
   { timestamps: true }
 );
-
-// Default roles with permissions (can be initialized at company creation)
-companySchema.statics.defaultRoles = [
-  {
-    title: "admin",
-    permissions: [
-      "accept_recruiter",
-      "remove_recruiter",
-      "accept_employee",
-      "remove_employee",
-      "accept_admin",
-      "remove_admin",
-    ],
-  },
-  {
-    title: "recruiter",
-    permissions: [
-      "accept_recruiter",
-      "remove_recruiter",
-      "accept_employee",
-      "remove_employee",
-    ],
-  },
-  {
-    title: "employee",
-    permissions: [],
-  },
-];
 
 const company = model("company", companySchema);
 export default company;

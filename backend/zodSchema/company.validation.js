@@ -23,7 +23,7 @@ export const createCompanySchema = z.object({
   industry: z.string().min(2),
   size: CompanySizeEnum,
   location: z.string().optional(),
-  website: z.string().url(),
+  website: z.string(),
   foundedYear: z.number().min(1950).max(new Date().getFullYear()),
   description: z.string().optional(),
   logo: z.string().optional(),
@@ -31,9 +31,9 @@ export const createCompanySchema = z.object({
   coverImage: z.string().optional(),
   socialLinks: z
     .object({
-      linkedin: z.string().url().optional(),
-      twitter: z.string().url().optional(),
-      github: z.string().url().optional(),
+      linkedin: z.string().optional(),
+      twitter: z.string().optional(),
+      github: z.string().optional(),
     })
     .optional(),
 });
