@@ -43,6 +43,7 @@ const companySchema = new Schema(
     logo: String,
     logoPublicId: String,
     coverImage: String,
+    coverImagePublicId: String,
 
     socialLinks: {
       linkedin: String,
@@ -75,6 +76,18 @@ const companySchema = new Schema(
       },
     ],
 
+    // Members array for robust role tracking
+    members: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        role: {
+          type: String,
+          enum: ["admin", "recruiter", "employee"],
+          required: true,
+        },
+      },
+    ],
+
     joinRequests: [
       {
         user: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -98,5 +111,5 @@ const companySchema = new Schema(
   { timestamps: true }
 );
 
-const company = model("company", companySchema);
-export default company;
+const Company = model("Company", companySchema);
+export default Company;

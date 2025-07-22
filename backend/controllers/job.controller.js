@@ -312,6 +312,26 @@ export const getJobPosts = async (req, res) => {
   });
 };
 
+export const getMyJobPosts = async (req, res) => {
+  const userId = req.user._id;
+  const jobs = await Job.find({ postedBy: userId });
+  res.status(200).json({ success: true, jobs });
+};
+
+export const getAllJobs = async (req, res) => {
+  const jobs = await Job.find({});
+  res.status(200).json({ success: true, jobs });
+};
+
+export const getJobsByCompany = async (req, res) => {
+  const { company } = req.query;
+  if (!company) {
+    return res.status(400).json({ success: false, message: "company query param is required" });
+  }
+  const jobs = await Job.find({ company });
+  res.status(200).json({ success: true, jobs });
+};
+
 export const deleteJobPost = async (req, res) => {
   const parsed = deleteJobSchema.safeParse({ params: req.params });
   if (!parsed.success)
@@ -354,4 +374,50 @@ export const deleteApplication = async (req, res) => {
     success: true,
     message: "Job application deleted successfully",
   });
+};
+
+export const editJob = async (req, res) => {
+  const user = req.user;
+  const { id } = req.params;
+
+  // Validate input (reuse postJobSchema for simplicity)
+  const parsed = postJobSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError("Validation failed", 400, parsed.error.errors);
+  }
+  const jobData = parsed.data;
+
+  // Find the job
+  const job = await catchAndWrap(() => Job.findById(id), "Job not found", 404);
+  if (!job) throw new AppError("Job not found", 404);
+
+  // Only allow if user is recruiter/admin of the company
+  if (!user.company || String(job.company) !== String(user.company)) {
+    throw new AppError("Unauthorized to edit this job", 403);
+  }
+  if (user.companyRole !== "admin" && user.companyRole !== "recruiter") {
+    throw new AppError("Only admins and recruiters can edit jobs", 403);
+  }
+
+  // Update fields
+  job.title = jobData.title;
+  job.description = jobData.description;
+  job.salary = jobData.salary;
+  job.type = jobData.type;
+  job.requirements = jobData.requirements;
+
+  await catchAndWrap(() => job.save(), "Failed to update job");
+
+  res.status(200).json({
+    success: true,
+    message: "Job updated successfully",
+    job,
+  });
+};
+
+export const getJobById = async (req, res) => {
+  const { id } = req.params;
+  const job = await Job.findById(id);
+  if (!job) return res.status(404).json({ success: false, message: "Job not found" });
+  res.status(200).json(job);
 };

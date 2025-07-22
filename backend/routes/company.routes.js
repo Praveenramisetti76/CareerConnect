@@ -16,10 +16,13 @@ import {
   getCompanyMembers,
   uploadCompanyLogo,
   uploadCompanyCover,
+  getMyCompanyRole,
+  searchCompaniesByName,
+  getCompanyById,
 } from "../controllers/company.controller.js";
 import {
-  uploadCompanyLogo as logoUpload,
-  uploadCompanyCover as coverUpload,
+  logoUpload,
+  coverUpload,
 } from "../middleware/multer.js";
 
 const router = express.Router();
@@ -42,11 +45,12 @@ router.patch(
   coverUpload.single("coverImage"),
   uploadCompanyCover
 );
-
-router.use(authentication);
+router.use(express.json());
 
 router.get("/all", getAllCompanies);
-router.get("/:companyId", getAllCompanies);
+router.get("/search", searchCompaniesByName);
+router.get("/my/:companyId", getCompanyById);
+router.get("/:id/me-role", getMyCompanyRole);
 
 router.post("/create", role("recruiter"), createCompany);
 
@@ -82,20 +86,6 @@ router.get(
   getCompanyMembers
 );
 
-router.get("/my-company", role("recruiter"), async (req, res, next) => {
-  try {
-    const user = req.user;
-    if (!user.company) {
-      return res.json({});
-    }
-    const company = await Company.findById(user.company);
-    if (!company) {
-      return res.json({});
-    }
-    res.json(company);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get("/my-company", role("recruiter"), getMyCompanyRole);
 
 export default router;

@@ -6,7 +6,8 @@ export const checkCompanyRole = (...allowedRoles) => {
   return async (req, res, next) => {
     try {
       const userId = req.user._id;
-      const { companyId } = req.params;
+      // Use req.user.company as fallback if companyId param is missing
+      const companyId = req.params.companyId || req.user.company;
 
       if (!companyId) {
         throw new AppError("Company ID is required", 400);
@@ -23,10 +24,6 @@ export const checkCompanyRole = (...allowedRoles) => {
         throw new AppError("Company not found", 404);
       }
 
-      // console.log("User ID:", userId.toString());
-      // console.log("Company admins:", company.admins.map(id => id.toString()));
-      // console.log("Join requests:", company.joinRequests);
-
       const isAdmin = company.admins.some(
         (adminId) => adminId.toString() === userId.toString()
       );
@@ -36,18 +33,12 @@ export const checkCompanyRole = (...allowedRoles) => {
           req.user.toString() === userId.toString() && req.status === "accepted"
       );
 
-      // console.log("isAdmin:", isAdmin);
-      // console.log("userRequest:", userRequest);
-
       let userRole = null;
       if (isAdmin) {
         userRole = "admin";
       } else if (userRequest) {
         userRole = userRequest.roleTitle;
       }
-
-      // console.log("userRole:", userRole);
-      // console.log("allowedRoles:", allowedRoles);
 
       if (!userRole) {
         throw new AppError("User is not a member of this company", 403);

@@ -10,6 +10,8 @@ import companyRoutes from "./routes/company.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 import articleRoutes from "./routes/article.routes.js";
 import cors from "cors";
+import './models/Company.js';
+import './models/User.js'; 
 
 dotenv.config();
 

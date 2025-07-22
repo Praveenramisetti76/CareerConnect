@@ -13,9 +13,9 @@ export const CompanySizeEnum = z.enum([
 export const RoleTitleEnum = z.enum(["admin", "recruiter", "employee"]);
 
 // ── MongoDB ObjectId Validator ──
-export const objectId = z.string().pipe(
-  z.string().regex(/^[a-f\d]{24}$/i, "Invalid ObjectId")
-);
+export const objectId = z
+  .string()
+  .pipe(z.string().regex(/^[a-f\d]{24}$/i, "Invalid ObjectId"));
 
 // ── 1. Create Company ──
 export const createCompanySchema = z.object({
@@ -36,6 +36,10 @@ export const createCompanySchema = z.object({
       github: z.string().optional(),
     })
     .optional(),
+});
+
+export const getMyCompanyRoleSchema = z.object({
+  id: z.string().length(24, "Invalid company ID"),
 });
 
 // ── 2. Update Company ──

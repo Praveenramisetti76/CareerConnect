@@ -9,6 +9,10 @@ export const signUpSchema = z.object({
   }),
 });
 
+export const updateUserRoleSchema = z.object({
+  newRole: z.enum(["candidate", "recruiter"]),
+});
+
 export const logInSchema = z.object({
   email: z.string().email(),
   password: z.string(),

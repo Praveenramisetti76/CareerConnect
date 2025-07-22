@@ -13,6 +13,7 @@ const allowedFields = [
   "experience",
   "education",
   "isOpenToWork",
+  "company",
 ];
 
 export const getProfile = async (req, res) => {
@@ -23,6 +24,7 @@ export const getProfile = async (req, res) => {
     "User not found",
     404
   );
+  console.log(user)
 
   res.status(200).json(user);
 };
@@ -88,6 +90,7 @@ export const updateProfile = async (req, res) => {
 };
 
 export const updateResume = async (req, res) => {
+  console.log("requested files: ", req.file)
   if (!req.user?.id) throw new AppError("Unauthorized", 401);
   if (!req.file) throw new AppError("Resume not found", 400);
 

@@ -10,7 +10,12 @@ import {
   getJobStatus,
   getJobPosts,
   updateApplicationStatus,
-  deleteJobPost
+  deleteJobPost,
+  editJob,
+  getMyJobPosts,
+  getJobsByCompany,
+  getJobById,
+  getAllJobs
 } from "../controllers/job.controller.js";
 
 import { authentication } from "../middleware/auth.js";
@@ -20,7 +25,16 @@ import { checkCompanyRole } from "../middleware/companyRole.js";
 const router = Router();
 router.use(authentication);
 
-router.post("/post", role("recruiter"), checkCompanyRole("recruiter"), postJob); //
+router.post("/post", role("recruiter", "admin"), checkCompanyRole("recruiter", "admin"), postJob); //
+router.put(
+  "/:id",
+  role("recruiter", "admin"),
+  checkCompanyRole("recruiter", "admin"),
+  editJob
+);
+router.get("/my-posts", getMyJobPosts);
+router.get("/all", getAllJobs);
+router.get("/:id", getJobById);
 
 router.get(
   "/:companyId/applications/:jobId",
@@ -49,6 +63,7 @@ router.delete("/:companyId/delete/:jobId/", deleteJobPost);//
 router.get("/posts", getJobPosts); //
 router.get("/status/:jobId", getJobStatus); //
 router.post("/apply/:jobId", applyToJob); //
+router.get("/", getJobsByCompany);
 
 router.get("/my/applications", getAllMyApplications); //
 router.get("/my/applications/:jobId", getAApplication); //

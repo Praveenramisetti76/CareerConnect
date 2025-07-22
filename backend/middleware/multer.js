@@ -9,5 +9,5 @@ import {
 
 export const uploadAvatar = multer({ storage: avatarStorage });
 export const uploadResume = multer({ storage: resumeStorage });
-export const uploadCompanyLogo = multer({ storage: companyLogoStorage });
-export const uploadCompanyCover = multer({ storage: companyCoverStorage });
+export const logoUpload = multer({ storage: companyLogoStorage });
+export const coverUpload = multer({ storage: companyCoverStorage });

@@ -10,6 +10,7 @@ import {
   logInSchema,
   resetPasswordParamsSchema,
   resetPasswordBodySchema,
+  updateUserRoleSchema,
 } from "../zodSchema/auth.validation.js";
 
 const registerUser = async (req, res) => {
@@ -61,10 +62,54 @@ const loginUser = async (req, res) => {
     token,
     user: {
       id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    company: user.company,
+    companyRole: user.companyRole,
     },
+  });
+};
+
+const getMe = async (req, res) => {
+  // Populate company field
+  const user = await User.findById(req.user._id).populate('company');
+  res.status(200).json({
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    company: user.company ? user.company._id : null,
+    companyRole: user.companyRole || null,
+  });
+};
+
+const logOut = async (req, res) => {
+  res.status(200).json({ message: "Logged out" });
+};
+
+const updateUserRole = async (req, res) => {
+  const parsed = updateUserRoleSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError("Validation failed", 400, parsed.error.errors);
+  }
+
+  const { newRole } = parsed.data;
+
+  if (req.user.role === newRole) {
+    throw new AppError("You already have this role", 400);
+  }
+
+  const updatedUser = await catchAndWrap(
+    () => User.findByIdAndUpdate(req.user.id, { role: newRole }, { new: true }),
+    "Failed to update role",
+    500
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Role updated. Please login again.",
+    updatedRole: updatedUser.role,
   });
 };
 
@@ -130,4 +175,12 @@ const resetPassword = async (req, res) => {
   res.status(200).json({ message: "Password was reset successfully." });
 };
 
-export { registerUser, loginUser, forgotPassword, resetPassword };
+export {
+  registerUser,
+  loginUser,
+  getMe,
+  logOut,
+  updateUserRole,
+  forgotPassword,
+  resetPassword,
+};
