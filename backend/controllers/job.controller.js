@@ -3,6 +3,7 @@ import Job from "../models/Job.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAndWrap } from "../utils/catchAndWrap.js";
 import {
+  applySchema,
   postJobSchema,
   getAllMyApplicationsSchema,
   getJobStatusSchema,
@@ -16,6 +17,7 @@ import {
 import Company from "../models/Company.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { jobOptions } from "../utils/queryOperations/jobOptions.js";
+import mongoose from "mongoose";
 
 export const applyToJob = async (req, res) => {
   const userId = req.user._id;
@@ -23,6 +25,7 @@ export const applyToJob = async (req, res) => {
 
   const parsed = applySchema.safeParse(req.body);
   if (!parsed.success) {
+    console.error(parsed.error);
     throw new AppError("Validation failed", 400, parsed.error.errors);
   }
 
@@ -109,8 +112,17 @@ export const getAApplication = async (req, res) => {
 };
 
 export const getAllMyApplications = async (req, res) => {
-  const parsed = getAllMyApplicationsSchema.safeParse(req);
+  console.log("getAllMyApplications called with:", {
+    query: req.query,
+    userId: req.user?._id,
+    user: req.user ? "exists" : "missing",
+  });
+
+  const parsed = getAllMyApplicationsSchema.safeParse({
+    query: req.query,
+  });
   if (!parsed.success) {
+    console.error("Validation failed:", parsed.error);
     throw new AppError("Validation failed", 400, parsed.error.errors);
   }
 
@@ -121,9 +133,29 @@ export const getAllMyApplications = async (req, res) => {
   if (status) filter.status = status;
 
   const applications = await catchAndWrap(
-    () => Application.find(filter).populate("job"),
+    () =>
+      Application.find(filter)
+        .populate({
+          path: "job",
+          select: "title companyName location type status createdAt",
+          populate: {
+            path: "company",
+            select: "name logoUrl",
+          },
+        })
+        .sort({ createdAt: -1 }),
     "Failed to fetch applications"
   );
+
+  console.log("Applications found:", {
+    count: applications.length,
+    applications: applications.map((app) => ({
+      id: app._id,
+      status: app.status,
+      jobTitle: app.job?.title,
+      user: app.user,
+    })),
+  });
 
   res.status(200).json({
     success: true,
@@ -280,7 +312,10 @@ export const updateApplicationStatus = async (req, res) => {
 };
 
 export const getJobPosts = async (req, res) => {
-  const parsed = getJobPostsSchema.safeParse({ params: req.params, query: req.query });
+  const parsed = getJobPostsSchema.safeParse({
+    params: req.params,
+    query: req.query,
+  });
   if (!parsed.success) {
     throw new AppError("Validation failed", 400, parsed.error.errors);
   }
@@ -314,7 +349,30 @@ export const getJobPosts = async (req, res) => {
 
 export const getMyJobPosts = async (req, res) => {
   const userId = req.user._id;
-  const jobs = await Job.find({ postedBy: userId });
+
+  // Get jobs and calculate application counts
+  const jobs = await Job.aggregate([
+    { $match: { postedBy: new mongoose.Types.ObjectId(userId) } },
+    {
+      $lookup: {
+        from: "applications",
+        localField: "_id",
+        foreignField: "job",
+        as: "applications",
+      },
+    },
+    {
+      $addFields: {
+        applicationsCount: { $size: "$applications" },
+      },
+    },
+    {
+      $project: {
+        applications: 0, // Remove the applications array, keep only the count
+      },
+    },
+  ]);
+
   res.status(200).json({ success: true, jobs });
 };
 
@@ -324,18 +382,42 @@ export const getAllJobs = async (req, res) => {
 };
 
 export const getJobsByCompany = async (req, res) => {
+  console.log("🔍 getJobsByCompany called");
+  console.log("Query params:", req.query);
+  console.log("Full URL:", req.originalUrl);
+
   const { company } = req.query;
   if (!company) {
-    return res.status(400).json({ success: false, message: "company query param is required" });
+    console.log("❌ No company query param provided");
+    return res
+      .status(400)
+      .json({ success: false, message: "company query param is required" });
   }
-  const jobs = await Job.find({ company });
-  res.status(200).json({ success: true, jobs });
+
+  console.log("🔍 Searching for jobs with company:", company);
+  try {
+    const jobs = await Job.find({ company });
+    console.log("✅ Found jobs:", jobs.length);
+    console.log("Jobs data:", jobs);
+    res.status(200).json({ success: true, jobs });
+  } catch (error) {
+    console.error("❌ Error fetching jobs:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching jobs",
+        error: error.message,
+      });
+  }
 };
 
 export const deleteJobPost = async (req, res) => {
   const parsed = deleteJobSchema.safeParse({ params: req.params });
-  if (!parsed.success)
+  if (!parsed.success) {
+    console.error(parsed.error); // Add this for debugging
     throw new AppError("Validation failed", 400, parsed.error.errors);
+  }
 
   const { companyId, jobId } = parsed.data.params;
 
@@ -362,8 +444,7 @@ export const deleteApplication = async (req, res) => {
   // console.log(jobId, applicationId);
 
   const deleted = await catchAndWrap(
-    () =>
-      Application.findOneAndDelete({ _id: applicationId, job: jobId }),
+    () => Application.findOneAndDelete({ _id: applicationId, job: jobId }),
     "Failed to delete application",
     404
   );
@@ -383,6 +464,7 @@ export const editJob = async (req, res) => {
   // Validate input (reuse postJobSchema for simplicity)
   const parsed = postJobSchema.safeParse(req.body);
   if (!parsed.success) {
+    console.error(parsed.error);
     throw new AppError("Validation failed", 400, parsed.error.errors);
   }
   const jobData = parsed.data;
@@ -416,8 +498,56 @@ export const editJob = async (req, res) => {
 };
 
 export const getJobById = async (req, res) => {
+  console.log("🔍 getJobById called");
+  console.log("Params:", req.params);
+  console.log("Query:", req.query);
+  console.log("Full URL:", req.originalUrl);
+
   const { id } = req.params;
+  console.log("🔍 Searching for job with ID:", id);
+
   const job = await Job.findById(id);
-  if (!job) return res.status(404).json({ success: false, message: "Job not found" });
+  if (!job) {
+    console.log("❌ Job not found with ID:", id);
+    return res.status(404).json({ success: false, message: "Job not found" });
+  }
+
+  console.log("✅ Found job:", job.title);
   res.status(200).json(job);
+};
+
+export const getAllApplicationsForCompany = async (req, res) => {
+  const userCompanyId = req.user.company;
+
+  if (!userCompanyId) {
+    throw new AppError(
+      "You must be part of a company to view applications",
+      403
+    );
+  }
+
+  // Get all applications for jobs posted by the company
+  const applications = await catchAndWrap(
+    () =>
+      Application.find({})
+        .populate({
+          path: "job",
+          match: { company: userCompanyId },
+          select: "title company companyName location type status createdAt",
+        })
+        .populate({
+          path: "user",
+          select: "name email resume avatarUrl phone location",
+        })
+        .sort({ createdAt: -1 }),
+    "Failed to fetch applications"
+  );
+
+  // Filter out applications where job is null (not matching company)
+  const filteredApplications = applications.filter((app) => app.job !== null);
+
+  res.status(200).json({
+    success: true,
+    data: filteredApplications,
+  });
 };

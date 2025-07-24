@@ -26,7 +26,8 @@ const resumeStorage = new CloudinaryStorage({
   params: async (req, file) => {
     return {
       folder: "resumes",
-      resource_type: "raw",
+      resource_type: "auto",
+      type: "upload",
       allowed_formats: ["pdf", "doc", "docx"],
     };
   },

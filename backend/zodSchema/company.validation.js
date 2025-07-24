@@ -21,14 +21,18 @@ export const objectId = z
 export const createCompanySchema = z.object({
   name: z.string().min(2),
   industry: z.string().min(2),
-  size: CompanySizeEnum,
+  size: CompanySizeEnum.optional(),
   location: z.string().optional(),
-  website: z.string(),
-  foundedYear: z.number().min(1950).max(new Date().getFullYear()),
+  website: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  foundedYear: z.number().min(1950).max(new Date().getFullYear()).optional(),
   description: z.string().optional(),
   logo: z.string().optional(),
   logoPublicId: z.string().optional(),
   coverImage: z.string().optional(),
+  benefits: z.array(z.string()).optional(),
+  specialties: z.array(z.string()).optional(),
   socialLinks: z
     .object({
       linkedin: z.string().optional(),

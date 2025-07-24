@@ -5,6 +5,7 @@ import { role } from "../middleware/role.js";
 import Company from "../models/Company.js";
 import {
   getAllCompanies,
+  getFilterOptions,
   createCompany,
   updateCompany,
   deleteCompany,
@@ -16,14 +17,13 @@ import {
   getCompanyMembers,
   uploadCompanyLogo,
   uploadCompanyCover,
+  getMyCompany,
   getMyCompanyRole,
   searchCompaniesByName,
   getCompanyById,
+  getMyJoinRequestStatus,
 } from "../controllers/company.controller.js";
-import {
-  logoUpload,
-  coverUpload,
-} from "../middleware/multer.js";
+import { logoUpload, coverUpload } from "../middleware/multer.js";
 
 const router = express.Router();
 
@@ -48,6 +48,7 @@ router.patch(
 router.use(express.json());
 
 router.get("/all", getAllCompanies);
+router.get("/filter-options", getFilterOptions);
 router.get("/search", searchCompaniesByName);
 router.get("/my/:companyId", getCompanyById);
 router.get("/:id/me-role", getMyCompanyRole);
@@ -86,6 +87,8 @@ router.get(
   getCompanyMembers
 );
 
-router.get("/my-company", role("recruiter"), getMyCompanyRole);
+router.get("/my-company", role("recruiter"), getMyCompany);
+router.get("/my-company-role", role("recruiter"), getMyCompanyRole);
+router.get("/my-join-requests", authentication, getMyJoinRequestStatus);
 
 export default router;

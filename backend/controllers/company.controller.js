@@ -14,18 +14,19 @@ import { catchAndWrap } from "../utils/catchAndWrap.js";
 import mongoose from "mongoose";
 import Company from "../models/Company.js";
 
-
-
 export const getMyCompany = async (req, res, next) => {
-    const user = req.user;
-    if (!user.company) {
-      return res.json({});
-    }
-    const company = await catchAndWrap(Company.findById(user.company));
-    if (!company) {
-      return res.json({});
-    }
-    res.json(company);
+  const user = req.user;
+  if (!user.company) {
+    return res.json({});
+  }
+  const company = await catchAndWrap(
+    () => Company.findById(user.company),
+    "Failed to fetch company"
+  );
+  if (!company) {
+    return res.json({});
+  }
+  res.json(company);
 };
 
 export const searchCompaniesByName = async (req, res) => {
@@ -35,7 +36,10 @@ export const searchCompaniesByName = async (req, res) => {
   }
 
   const results = await catchAndWrap(
-    () => Company.find({ name: new RegExp(q, "i") }).select("_id name logo").limit(10),
+    () =>
+      Company.find({ name: new RegExp(q, "i") })
+        .select("_id name logo")
+        .limit(10),
     "Company search failed"
   );
 
@@ -82,7 +86,11 @@ export const createCompany = async (req, res) => {
 
   // Parse socialLinks if sent as FormData fields
   let parsedBody = { ...req.body };
-  if (parsedBody["socialLinks[linkedin]"] || parsedBody["socialLinks[twitter]"] || parsedBody["socialLinks[github]"]) {
+  if (
+    parsedBody["socialLinks[linkedin]"] ||
+    parsedBody["socialLinks[twitter]"] ||
+    parsedBody["socialLinks[github]"]
+  ) {
     parsedBody.socialLinks = {
       linkedin: parsedBody["socialLinks[linkedin]"] || "",
       twitter: parsedBody["socialLinks[twitter]"] || "",
@@ -107,7 +115,10 @@ export const createCompany = async (req, res) => {
   }, "Failed to create company");
 
   await catchAndWrap(async () => {
-    await User.findByIdAndUpdate(userId, { company: company._id, companyRole: "admin" });
+    await User.findByIdAndUpdate(userId, {
+      company: company._id,
+      companyRole: "admin",
+    });
   }, "Failed to update user with company info");
 
   res.status(201).json({
@@ -152,23 +163,168 @@ export const uploadCompanyCover = async (req, res) => {
 };
 
 export const getAllCompanies = async (req, res) => {
-  const filter = buildCompanyQuery(req.query);
-  const sort = req.query.sort === "newest" ? { createdAt: -1 } : {};
-  const limit = parseInt(req.query.limit) || 10;
+  const {
+    search,
+    industry,
+    location,
+    size,
+    sort = "name",
+    page = 1,
+    limit = 12,
+    hasJobs,
+  } = req.query;
 
-  const companies = await catchAndWrap(
-    () => Company.find(filter).select("-joinRequests").sort(sort).limit(limit),
-    "Failed to fetch companies",
-    500
-  );
-
-  res.status(200).json({
-    success: true,
-    companies,
+  // Build filter object
+  const filter = buildCompanyQuery({
+    industry,
+    location,
+    size,
+    verified: req.query.verified,
+    foundedAfter: req.query.foundedAfter,
+    foundedBefore: req.query.foundedBefore,
   });
+
+  // Add search functionality
+  if (search && search.trim()) {
+    filter.$or = [
+      { name: { $regex: search.trim(), $options: "i" } },
+      { industry: { $regex: search.trim(), $options: "i" } },
+      { description: { $regex: search.trim(), $options: "i" } },
+    ];
+  }
+
+  // Build sort object
+  let sortObject = {};
+  switch (sort) {
+    case "name_asc":
+      sortObject = { name: 1 };
+      break;
+    case "name_desc":
+      sortObject = { name: -1 };
+      break;
+    case "newest":
+      sortObject = { createdAt: -1 };
+      break;
+    case "oldest":
+      sortObject = { createdAt: 1 };
+      break;
+    case "most_jobs":
+      sortObject = { jobCount: -1 };
+      break;
+    default:
+      sortObject = { name: 1 };
+  }
+
+  // Pagination
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const skip = (pageNum - 1) * limitNum;
+
+  try {
+    // Aggregate pipeline to get job counts and filter by jobs if needed
+    const aggregationPipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: "jobs",
+          localField: "_id",
+          foreignField: "company",
+          as: "jobs",
+        },
+      },
+      {
+        $addFields: {
+          jobCount: { $size: "$jobs" },
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          industry: 1,
+          location: 1,
+          size: 1,
+          logo: 1,
+          description: 1,
+          website: 1,
+          jobCount: 1,
+          verified: 1,
+          createdAt: 1,
+        },
+      },
+    ];
+
+    // Add filter for companies with jobs if requested
+    if (hasJobs === "true") {
+      aggregationPipeline.push({ $match: { jobCount: { $gt: 0 } } });
+    }
+
+    // Add sorting
+    aggregationPipeline.push({ $sort: sortObject });
+
+    // Get total count
+    const totalCountPipeline = [...aggregationPipeline, { $count: "total" }];
+    const [totalResult] = await Company.aggregate(totalCountPipeline);
+    const total = totalResult?.total || 0;
+
+    // Add pagination
+    aggregationPipeline.push({ $skip: skip }, { $limit: limitNum });
+
+    // Execute query
+    const companies = await Company.aggregate(aggregationPipeline);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.status(200).json({
+      success: true,
+      companies,
+      pagination: {
+        current: pageNum,
+        total: totalPages,
+        limit: limitNum,
+        totalCompanies: total,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch companies",
+    });
+  }
 };
 
+export const getFilterOptions = async (req, res) => {
+  try {
+    // Get distinct industries
+    const industries = await Company.distinct("industry");
 
+    // Get distinct locations
+    const locations = await Company.distinct("location");
+
+    // Predefined size options
+    const sizes = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
+
+    res.status(200).json({
+      success: true,
+      options: {
+        industries: industries.filter(
+          (industry) => industry && industry.trim()
+        ),
+        locations: locations.filter((location) => location && location.trim()),
+        sizes,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching filter options:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch filter options",
+    });
+  }
+};
 
 export const getCompanyById = async (req, res) => {
   const { companyId } = req.params;
@@ -336,7 +492,7 @@ export const getJoinRequests = async (req, res) => {
 
   res.status(200).json({
     success: true,
-    requests: company.joinRequests,
+    requests: company.joinRequests || [],
   });
 };
 
@@ -366,9 +522,14 @@ export const handleJoinRequest = async (req, res, next) => {
     );
     user.company = company._id;
     user.companyRole = request.roleTitle;
+    if (user.companyRole === "recruiter" || user.companyRole === "admin") {
+      user.role = "recruiter";
+    }
     await user.save();
     // Add to company members if not already present
-    if (!company.members.some(m => m.user.toString() === user._id.toString())) {
+    if (
+      !company.members.some((m) => m.user.toString() === user._id.toString())
+    ) {
       company.members.push({ user: user._id, role: request.roleTitle });
     }
   }
@@ -381,9 +542,9 @@ export const updateCompanyRole = async (req, res) => {
   const { companyId, userId } = req.params;
   const { roleTitle } = updateCompanyRoleSchema.parse(req.body);
 
-  // Don't allow promoting to owner unless you're already owner
+  // Don't allow promoting to admin unless you're already admin
   if (roleTitle === "admin" && req.companyRole !== "admin") {
-    throw new AppError("Only an admin can assign ownership", 403);
+    throw new AppError("Only an admin can assign admin role", 403);
   }
 
   const company = await catchAndWrap(
@@ -400,8 +561,29 @@ export const updateCompanyRole = async (req, res) => {
     throw new AppError("User is not a valid company member", 404);
   }
 
+  // Update the company role in joinRequests
   joinRequest.roleTitle = roleTitle;
+
+  // Also update the member's role in the members array
+  const memberIndex = company.members.findIndex(
+    (member) => member.user.toString() === userId
+  );
+  if (memberIndex !== -1) {
+    company.members[memberIndex].role = roleTitle;
+  }
+
   await catchAndWrap(() => company.save(), "Failed to update user role");
+
+  // Update the user's companyRole field
+  const user = await User.findById(userId);
+  if (user) {
+    user.companyRole = roleTitle;
+    // Update user role if needed (recruiter/admin should have role=recruiter)
+    if (roleTitle === "recruiter" || roleTitle === "admin") {
+      user.role = "recruiter";
+    }
+    await user.save();
+  }
 
   res.status(200).json({
     success: true,
@@ -431,22 +613,35 @@ export const removeMemberFromCompany = async (req, res) => {
 
   const userRequest = company.joinRequests[requestIndex];
 
-  if (userRequest.roleTitle === "owner" && req.companyRole !== "owner") {
-    throw new AppError("Only an owner can remove another owner", 403);
+  // Only admin can remove admin users
+  if (userRequest.roleTitle === "admin" && req.companyRole !== "admin") {
+    throw new AppError("Only an admin can remove another admin", 403);
   }
 
+  // Remove from joinRequests
   company.joinRequests.splice(requestIndex, 1);
 
+  // Remove from admins array
   company.admins = company.admins.filter(
     (adminId) => adminId.toString() !== userId
   );
 
+  // Remove from members array
+  company.members = company.members.filter(
+    (member) => member.user.toString() !== userId
+  );
+
   await catchAndWrap(() => company.save(), "Failed to update company");
 
+  // Update user's company fields
   const user = await User.findById(userId);
   if (user && user.company?.toString() === companyId) {
     user.company = null;
     user.companyRole = null;
+    // Reset role to candidate if they were a recruiter
+    if (user.role === "recruiter") {
+      user.role = "candidate";
+    }
     await user.save();
   }
 
@@ -456,24 +651,69 @@ export const removeMemberFromCompany = async (req, res) => {
   });
 };
 
+export const getMyJoinRequestStatus = async (req, res) => {
+  const userId = req.user._id;
+
+  try {
+    // Find companies where user has join requests
+    const companies = await Company.find({
+      "joinRequests.user": userId,
+    }).select("name joinRequests");
+
+    const userRequests = [];
+
+    companies.forEach((company) => {
+      const userRequest = company.joinRequests.find(
+        (request) => request.user.toString() === userId.toString()
+      );
+
+      if (userRequest) {
+        userRequests.push({
+          companyId: company._id,
+          companyName: company.name,
+          roleTitle: userRequest.roleTitle,
+          status: userRequest.status,
+          requestedAt: userRequest.requestedAt,
+        });
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      requests: userRequests,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch join request status",
+    });
+  }
+};
+
 export const getCompanyMembers = async (req, res) => {
   const { companyId } = req.params;
 
   const company = await catchAndWrap(
-    () => Company.findById(companyId),
+    () =>
+      Company.findById(companyId).populate("joinRequests.user", "name email"),
     "Failed to fetch company"
   );
 
   if (!company) throw new AppError("Company not found", 404);
 
-  const members = await catchAndWrap(
-    () => User.find({ company: companyId }).select("name email role"),
-    "Failed to fetch members"
-  );
+  // Get all accepted members from joinRequests
+  const acceptedMembers = company.joinRequests
+    .filter((request) => request.status === "accepted")
+    .map((request) => ({
+      _id: request.user._id,
+      name: request.user.name,
+      email: request.user.email,
+      role: request.roleTitle, // This is the company role
+    }));
 
   res.status(200).json({
     success: true,
-    count: members.length,
-    members,
+    count: acceptedMembers.length,
+    members: acceptedMembers,
   });
 };

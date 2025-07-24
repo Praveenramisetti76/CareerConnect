@@ -21,8 +21,8 @@ const postJobSchema = z.object({
 
   salaryRange: z
     .object({
-      min: z.number().optional(),
-      max: z.number().optional(),
+      min: z.string().optional(),
+      max: z.string().optional(),
     })
     .optional(),
 
@@ -33,7 +33,6 @@ const postJobSchema = z.object({
 
 const applySchema = z.object({
   resume: z.string().url("Resume must be a valid URL"),
-  coverLetter: z.string().optional(),
 });
 
 const statusUpdateSchema = z.object({
@@ -42,7 +41,9 @@ const statusUpdateSchema = z.object({
 
 export const getAllMyApplicationsSchema = z.object({
   query: z.object({
-    status: z.enum(["pending", "accepted", "rejected"]).optional(),
+    status: z
+      .enum(["applied", "reviewed", "interview", "hired", "rejected"])
+      .optional(),
   }),
 });
 

@@ -8,6 +8,9 @@ export const articleOptions = (query) => {
     ...filters
   } = query;
 
+  console.log("🐛 DEBUG - articleOptions input query:", query);
+  console.log("🐛 DEBUG - articleOptions filters:", filters);
+
   // Convert page/limit to numbers
   const skip = (Number(page) - 1) * Number(limit);
 
@@ -28,8 +31,20 @@ export const articleOptions = (query) => {
     };
   }
 
+  // Handle status filter - include articles without status field (treat as published)
+  if (filters.status === "published") {
+    filters.$or = [
+      { status: "published" },
+      { status: { $exists: false } }, // Include articles without status field
+    ];
+    delete filters.status; // Remove the original status filter
+  }
+
+  const finalFilter = { ...filters, ...searchFilter };
+  console.log("🐛 DEBUG - Final filter being applied:", finalFilter);
+
   return {
-    filter: { ...filters, ...searchFilter },
+    filter: finalFilter,
     skip,
     limit: Number(limit),
     sort: { [sortBy]: order === "asc" ? 1 : -1 },

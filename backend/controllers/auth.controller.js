@@ -62,18 +62,19 @@ const loginUser = async (req, res) => {
     token,
     user: {
       id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    company: user.company,
-    companyRole: user.companyRole,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      company: user.company,
+      companyRole: user.companyRole,
     },
   });
 };
 
 const getMe = async (req, res) => {
-  // Populate company field
-  const user = await User.findById(req.user._id).populate('company');
+  const user = await catchAndWrap(() =>
+    User.findById(req.user._id).populate("company")
+  );
   res.status(200).json({
     id: user._id,
     name: user.name,
@@ -130,7 +131,7 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   await user.save();
 
-  const resetURL = `http://localhost:5000/reset-password/${token}/${user._id}`;
+  const resetURL = `http://localhost:5173/auth/reset-password/${token}/${user._id}`;
   await sendPasswordReset(email, resetURL);
 
   res.status(200).json({ message: "Password reset link sent successfully" });

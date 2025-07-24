@@ -1,0 +1,230 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Users, Handshake, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+
+const AboutPage = () => {
+  const [contactForm, setContactForm] = useState({
+    email: "",
+    message: "",
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Handle form submission here
+    toast.success("Thank you for your message! We'll get back to you soon.");
+    setContactForm({ email: "", message: "" });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setContactForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  return (
+    <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
+      <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+        <div className="flex flex-wrap justify-between gap-3 p-4">
+          <h1 className="text-[#111518] tracking-tight text-[32px] font-bold leading-tight min-w-72">
+            About CareerConnect
+          </h1>
+        </div>
+
+        <p className="text-[#111518] text-base font-normal leading-normal pb-3 pt-1 px-4">
+          CareerConnect is a leading job board platform dedicated to connecting
+          talented professionals with innovative companies. Our mission is to
+          empower individuals to find fulfilling careers and help organizations
+          build exceptional teams. We believe in transparency, inclusivity, and
+          providing equal opportunities for all.
+        </p>
+
+        <h2 className="text-[#111518] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
+          Our Mission
+        </h2>
+        <p className="text-[#111518] text-base font-normal leading-normal pb-3 pt-1 px-4">
+          At CareerConnect, we strive to create a seamless and efficient job
+          search experience. We are committed to providing job seekers with
+          access to a wide range of opportunities and resources to help them
+          succeed in their career journeys. For employers, we offer powerful
+          tools to attract, engage, and hire top talent.
+        </p>
+
+        <h2 className="text-[#111518] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
+          Our Values
+        </h2>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
+          <div className="flex flex-1 gap-3 rounded-lg border border-[#d5dce2] bg-gray-50 p-4 flex-col">
+            <div className="text-[#111518]">
+              <Users size={24} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[#111518] text-base font-bold leading-tight">
+                People First
+              </h3>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                We prioritize the needs of our users, both job seekers and
+                employers.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-1 gap-3 rounded-lg border border-[#d5dce2] bg-gray-50 p-4 flex-col">
+            <div className="text-[#111518]">
+              <Handshake size={24} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[#111518] text-base font-bold leading-tight">
+                Collaboration
+              </h3>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                We believe in the power of teamwork and open communication.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-1 gap-3 rounded-lg border border-[#d5dce2] bg-gray-50 p-4 flex-col">
+            <div className="text-[#111518]">
+              <ShieldCheck size={24} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[#111518] text-base font-bold leading-tight">
+                Integrity
+              </h3>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                We uphold the highest standards of ethics and transparency.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h2 className="text-[#111518] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
+          Meet the Team
+        </h2>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
+          <div className="flex flex-col gap-3 text-center pb-3">
+            <div className="px-4">
+              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                SC
+              </div>
+            </div>
+            <div>
+              <p className="text-[#111518] text-base font-medium leading-normal">
+                Sarah Chen
+              </p>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                CEO
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 text-center pb-3">
+            <div className="px-4">
+              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-2xl">
+                DL
+              </div>
+            </div>
+            <div>
+              <p className="text-[#111518] text-base font-medium leading-normal">
+                David Lee
+              </p>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                CTO
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 text-center pb-3">
+            <div className="px-4">
+              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+                ER
+              </div>
+            </div>
+            <div>
+              <p className="text-[#111518] text-base font-medium leading-normal">
+                Emily Rodriguez
+              </p>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                Head of Marketing
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 text-center pb-3">
+            <div className="px-4">
+              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-2xl">
+                MB
+              </div>
+            </div>
+            <div>
+              <p className="text-[#111518] text-base font-medium leading-normal">
+                Michael Brown
+              </p>
+              <p className="text-[#5d7589] text-sm font-normal leading-normal">
+                Head of Product
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h2 className="text-[#111518] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
+          Contact Us
+        </h2>
+        <p className="text-[#111518] text-base font-normal leading-normal pb-3 pt-1 px-4">
+          We'd love to hear from you! If you have any questions, feedback, or
+          inquiries, please don't hesitate to reach out to us.
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+            <label className="flex flex-col min-w-40 flex-1">
+              <p className="text-[#111518] text-base font-medium leading-normal pb-2">
+                Email
+              </p>
+              <Input
+                type="email"
+                name="email"
+                placeholder="yourname@email.com"
+                value={contactForm.email}
+                onChange={handleInputChange}
+                className="h-14 bg-gray-50 border-[#d5dce2] placeholder:text-[#5d7589] text-base font-normal focus:border-[#d5dce2]"
+                required
+              />
+            </label>
+          </div>
+
+          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+            <label className="flex flex-col min-w-40 flex-1">
+              <p className="text-[#111518] text-base font-medium leading-normal pb-2">
+                Message
+              </p>
+              <Textarea
+                name="message"
+                placeholder="Type your message here"
+                value={contactForm.message}
+                onChange={handleInputChange}
+                className="min-h-36 bg-gray-50 border-[#d5dce2] placeholder:text-[#5d7589] text-base font-normal focus:border-[#d5dce2] resize-none"
+                required
+              />
+            </label>
+          </div>
+
+          <div className="flex px-4 py-3 justify-start">
+            <Button
+              type="submit"
+              className="min-w-[84px] max-w-[480px] h-10 px-4 bg-[#c9dcec] hover:bg-[#b8d0e8] text-[#111518] text-sm font-bold rounded-full"
+            >
+              Send
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AboutPage;

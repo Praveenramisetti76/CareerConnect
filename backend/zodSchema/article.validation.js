@@ -6,6 +6,19 @@ const objectId = () =>
 export const createArticleSchema = z.object({
   title: z.string().min(2, "Title is too short"),
   content: z.string().min(10, "Content must be at least 10 characters"),
+  category: z
+    .enum([
+      "Interview Tips",
+      "Resume Writing",
+      "Career Development",
+      "Industry Trends",
+      "Job Search",
+      "Networking",
+      "Professional Skills",
+      "Workplace Culture",
+      "General",
+    ])
+    .optional(),
   tags: z.array(z.string().min(1)).optional(),
 });
 
@@ -17,6 +30,19 @@ export const updateArticleSchema = z.object({
     .object({
       title: z.string().min(2).optional(),
       content: z.string().min(10).optional(),
+      category: z
+        .enum([
+          "Interview Tips",
+          "Resume Writing",
+          "Career Development",
+          "Industry Trends",
+          "Job Search",
+          "Networking",
+          "Professional Skills",
+          "Workplace Culture",
+          "General",
+        ])
+        .optional(),
       tags: z.array(z.string().min(1)).optional(),
     })
     .refine((data) => Object.keys(data).length > 0, {

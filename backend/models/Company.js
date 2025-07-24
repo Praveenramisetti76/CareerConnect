@@ -27,7 +27,14 @@ const companySchema = new Schema(
 
     website: {
       type: String,
-      required: true,
+    },
+
+    email: {
+      type: String,
+    },
+
+    phone: {
+      type: String,
     },
 
     foundedYear: {
@@ -44,6 +51,20 @@ const companySchema = new Schema(
     logoPublicId: String,
     coverImage: String,
     coverImagePublicId: String,
+
+    benefits: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    specialties: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
 
     socialLinks: {
       linkedin: String,
