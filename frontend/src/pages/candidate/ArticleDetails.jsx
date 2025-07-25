@@ -42,9 +42,9 @@ const CandidateArticleDetails = () => {
   // Like mutation
   const likeMutation = useMutation({
     mutationFn: () => toggleLike(articleId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(["article", articleId]);
-      toast.success("Article liked!");
+      toast.success(data?.message || (data?.isLiked ? "Article liked!" : "Like removed!"));
     },
     onError: () => {
       toast.error("Failed to like article");
@@ -196,22 +196,6 @@ const CandidateArticleDetails = () => {
                 >
                   <MessageCircle size={18} />
                   <span>{article.comments?.length || 0} Comments</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 px-4 py-2"
-                >
-                  <Share2 size={18} />
-                  Share
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 border-gray-300 hover:border-blue-600 hover:text-blue-600 px-4 py-2"
-                >
-                  <Bookmark size={18} />
-                  Save
                 </Button>
               </div>
             </div>

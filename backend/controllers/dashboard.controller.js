@@ -6,6 +6,7 @@ import Application from "../models/Application.js";
 import Article from "../models/Article.js";
 import Company from "../models/Company.js";
 import User from "../models/User.js";
+import Contact from "../models/Contact.js";
 
 export const getDashboardStats = async (req, res) => {
   const userId = req.user._id;
@@ -226,4 +227,17 @@ export const getCompanyMetrics = async (req, res) => {
     success: true,
     data: metrics,
   });
+};
+
+export const submitContactForm = async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+    const contact = await Contact.create({ name, email, subject, message });
+    res.status(201).json({ success: true, message: "Contact form submitted successfully.", contact });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to submit contact form.", error: error.message });
+  }
 };

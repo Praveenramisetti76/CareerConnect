@@ -5,7 +5,7 @@ export const profileValidationSchema = z.object({
   headline: z.string().optional(),
   about: z.string().optional(),
   location: z.string().optional(),
-  skills: z.array(z.string()).optional(),
+  skills: z.union([z.string(), z.array(z.string())]).optional(),
   isOpenToWork: z.boolean().optional(),
   social: z
     .object({

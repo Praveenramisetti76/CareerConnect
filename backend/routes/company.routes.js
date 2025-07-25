@@ -22,6 +22,8 @@ import {
   searchCompaniesByName,
   getCompanyById,
   getMyJoinRequestStatus,
+  respondToCompanyJoinRequest,
+  inviteUserToCompany,
 } from "../controllers/company.controller.js";
 import { logoUpload, coverUpload } from "../middleware/multer.js";
 
@@ -69,6 +71,11 @@ router.put(
   checkCompanyRole("admin", "recruiter"),
   handleJoinRequest
 );
+router.put(
+  "/:companyId/requests/respond",
+  authentication,
+  respondToCompanyJoinRequest
+);
 
 router.put(
   "/:companyId/roles/:userId",
@@ -79,6 +86,12 @@ router.delete(
   "/:companyId/roles/:userId",
   checkCompanyRole("admin", "recruiter"),
   removeMemberFromCompany
+);
+
+router.post(
+  "/:companyId/invite",
+  checkCompanyRole("admin", "recruiter"),
+  inviteUserToCompany
 );
 
 router.get(

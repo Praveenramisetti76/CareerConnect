@@ -111,8 +111,14 @@ const ArticlesPage = () => {
   };
 
   const handleArticleClick = (articleId) => {
-    // Always navigate to recruiter article details route for both user types
-    navigate(`/recruiter/articles/${articleId}`);
+    // Navigate to the correct article details route based on user role
+    if (isRecruiter) {
+      navigate(`/recruiter/articles/${articleId}`);
+    } else if (isCandidate) {
+      navigate(`/candidate/articles/${articleId}`);
+    } else {
+      navigate(`/recruiter/articles/${articleId}`); // fallback
+    }
   };
 
   const handleCreateArticle = () => {

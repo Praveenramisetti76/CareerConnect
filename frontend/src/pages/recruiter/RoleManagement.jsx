@@ -8,6 +8,8 @@ import {
   getCompanyMembers,
   updateCompanyRole,
   removeMemberFromCompany,
+  getAllCompanies,
+  requestToJoinCompany,
 } from "@/api/companyApi";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +32,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import api from "@/lib/axios";
 
 const RoleManagement = () => {
   const { companyId, companyRole } = useCompanyStore();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedRole, setSelectedRole] = useState("recruiter");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Fetch join requests
   const {
@@ -57,6 +67,62 @@ const RoleManagement = () => {
     queryKey: ["companyMembers", companyId],
     queryFn: () => getCompanyMembers(companyId),
     enabled: !!companyId,
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["allCompaniesForJoin"],
+    queryFn: getAllCompanies,
+    enabled: joinDialogOpen,
+  });
+
+  // Debounced user search
+  useEffect(() => {
+    if (!searchTerm) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    console.log('[DEBUG] Searching for users:', searchTerm, 'companyId:', companyId);
+    const timeout = setTimeout(async () => {
+      try {
+        const url = `/connection/search?search=${encodeURIComponent(searchTerm)}&companyId=${companyId}`;
+        console.log('[DEBUG] API Request:', url);
+        const res = await api.get(url);
+        console.log('[DEBUG] API Response:', res.data);
+        setSearchResults(res.data.results || []);
+      } catch (e) {
+        console.error('[DEBUG] Search error:', e);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [searchTerm, companyId]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      console.log('[DEBUG] Selected user:', selectedUser);
+    }
+  }, [selectedUser]);
+
+  const sendUserJoinRequest = useMutation({
+    mutationFn: ({ userId, roleTitle }) => {
+      console.log('[DEBUG] Sending invite:', { userId, roleTitle, companyId });
+      return api.post(`/company/${companyId}/invite`, { userId, roleTitle });
+    },
+    onSuccess: (data) => {
+      console.log('[DEBUG] Invite success:', data);
+      toast.success("Join request sent!");
+      setJoinDialogOpen(false);
+      setSelectedUser(null);
+      setSearchTerm("");
+      setSelectedRole("recruiter");
+    },
+    onError: (error) => {
+      console.error('[DEBUG] Invite error:', error);
+      toast.error(error.response?.data?.message || "Failed to send join request");
+    },
   });
 
   // Handle join request mutation
@@ -200,11 +266,19 @@ const RoleManagement = () => {
                 Manage team members, requests, and permissions
               </p>
             </div>
-            <div className="ml-8">
+            <div className="ml-8 flex flex-col items-end gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-medium text-sm">
                 <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
                 <span>Your Role: {companyRole}</span>
               </div>
+              {(companyRole === "admin" || companyRole === "recruiter") && (
+                <Button
+                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-semibold shadow-sm"
+                  onClick={() => setJoinDialogOpen(true)}
+                >
+                  Send Join Request to Company
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -616,6 +690,82 @@ const RoleManagement = () => {
                 <span>
                   {removeMemberMutation.isPending ? "Removing..." : "Remove"}
                 </span>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Join Request Dialog */}
+        <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
+          <DialogContent className="bg-white border-slate-200 rounded-xl shadow-xl max-w-md">
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-lg font-semibold text-slate-900 tracking-tight">
+                Send Join Request to User
+              </DialogTitle>
+              <DialogDescription className="text-slate-600 leading-relaxed mt-1 text-sm">
+                Search for a user and select a role to send a join request to join your company.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="block text-slate-700 text-sm font-medium mb-1">Search User</label>
+                <input
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={e => {
+                    setSearchTerm(e.target.value);
+                    setSelectedUser(null);
+                  }}
+                  placeholder="Enter name or email"
+                />
+                {searchLoading && <div className="text-xs text-slate-500 mt-1">Searching...</div>}
+                {searchResults.length > 0 && (
+                  <div className="mt-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-sm">
+                    {searchResults.map(u => (
+                      <div
+                        key={u._id}
+                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${selectedUser?._id === u._id ? 'bg-blue-100' : ''}`}
+                        onClick={() => setSelectedUser(u)}
+                      >
+                        <div className="font-medium text-slate-800">{u.name}</div>
+                        <div className="text-xs text-slate-500">{u.email}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {searchTerm && !searchLoading && searchResults.length === 0 && (
+                  <div className="text-xs text-slate-500 mt-2">No users found.</div>
+                )}
+                {selectedUser && (
+                  <div className="mt-2 text-xs text-green-700">Selected: {selectedUser.name} ({selectedUser.email})</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-slate-700 text-sm font-medium mb-1">Role</label>
+                <select
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedRole}
+                  onChange={e => setSelectedRole(e.target.value)}
+                >
+                  <option value="recruiter">Recruiter</option>
+                  <option value="admin">Admin</option>
+                  <option value="employee">Employee</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter className="pt-4 gap-2">
+              <Button
+                onClick={() => setJoinDialogOpen(false)}
+                className="h-8 px-4 bg-white border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 rounded-lg font-medium transition-all duration-200 text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => sendUserJoinRequest.mutate({ userId: selectedUser._id, roleTitle: selectedRole })}
+                disabled={!selectedUser || sendUserJoinRequest.isPending}
+                className="h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 text-sm"
+              >
+                {sendUserJoinRequest.isPending ? "Sending..." : "Send Request"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -216,3 +216,9 @@ export const addComment = async (articleId, commentData) => {
     throw error;
   }
 };
+
+// Verify signup 2FA OTP
+export const verifySignup2FA = async (userId, otp) => {
+  const response = await api.post("/auth/verify-signup-2fa", { userId, otp });
+  return response.data;
+};

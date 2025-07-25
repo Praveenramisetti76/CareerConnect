@@ -45,6 +45,8 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import FeaturesPage from "@/pages/FeaturesPage";
 import PublicPageWrapper from "@/components/PublicPageWrapper";
+import NotFound from "@/pages/NotFound";
+import SettingsPage from "@/pages/shared/SettingsPage";
 
 const AppRouter = () => {
   const { loading } = useInitializeAuth();
@@ -486,6 +488,30 @@ const AppRouter = () => {
         }
       />
 
+      {/* Settings - Recruiter */}
+      <Route
+        path="/recruiter/settings"
+        element={
+          <AccessControl auth={true} role="recruiter">
+            <SmartLayoutWrapper>
+              <SettingsPage />
+            </SmartLayoutWrapper>
+          </AccessControl>
+        }
+      />
+
+      {/* Settings - Candidate */}
+      <Route
+        path="/candidate/settings"
+        element={
+          <AccessControl auth={true} role="candidate">
+            <CandidateLayout>
+              <SettingsPage />
+            </CandidateLayout>
+          </AccessControl>
+        }
+      />
+
       {/* Profile Routes */}
       <Route
         path="/profile"
@@ -559,7 +585,7 @@ const AppRouter = () => {
 
       {/* Default redirects */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

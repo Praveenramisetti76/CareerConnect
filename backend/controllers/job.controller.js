@@ -18,10 +18,16 @@ import Company from "../models/Company.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { jobOptions } from "../utils/queryOperations/jobOptions.js";
 import mongoose from "mongoose";
+import { sendCustomEmail } from "../utils/sendEmail.js";
 
 export const applyToJob = async (req, res) => {
   const userId = req.user._id;
   const { jobId } = req.params;
+
+  // Check if user has a resume
+  if (!req.user.resumeUrl) {
+    throw new AppError("You must upload a resume before applying for a job.", 400);
+  }
 
   const parsed = applySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -377,7 +383,20 @@ export const getMyJobPosts = async (req, res) => {
 };
 
 export const getAllJobs = async (req, res) => {
-  const jobs = await Job.find({});
+  const { search } = req.query;
+  let filter = {};
+  if (search) {
+    const regex = new RegExp(search, "i");
+    filter = {
+      $or: [
+        { title: regex },
+        { description: regex },
+        { companyName: regex },
+        { location: regex },
+      ],
+    };
+  }
+  const jobs = await Job.find(filter).populate("company");
   res.status(200).json({ success: true, jobs });
 };
 
@@ -550,4 +569,39 @@ export const getAllApplicationsForCompany = async (req, res) => {
     success: true,
     data: filteredApplications,
   });
+};
+
+// Send status update email to applicant
+export const sendApplicationStatusEmail = async (req, res) => {
+  const { applicationId } = req.params;
+
+  // Find application, populate user and job
+  const application = await Application.findById(applicationId)
+    .populate("user")
+    .populate("job");
+  if (!application) {
+    return res.status(404).json({ success: false, message: "Application not found" });
+  }
+  const user = application.user;
+  const job = application.job;
+  if (!user?.email) {
+    return res.status(400).json({ success: false, message: "Applicant email not found" });
+  }
+
+  // Email template
+  const subject = `Update on your application for ${job.title}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif;">
+      <h2>Application Status Update</h2>
+      <p>Dear ${user.name || "Applicant"},</p>
+      <p>Your application for the position of <strong>${job.title}</strong> at <strong>${job.companyName}</strong> has been updated.</p>
+      <p><strong>New Status:</strong> <span style="color: #2563eb;">${application.status.charAt(0).toUpperCase() + application.status.slice(1)}</span></p>
+      <p>If you have any questions, feel free to reply to this email.</p>
+      <br/>
+      <p>Best regards,<br/>${job.companyName} Recruitment Team</p>
+    </div>
+  `;
+
+  await sendCustomEmail(user.email, subject, html);
+  res.status(200).json({ success: true, message: "Status update email sent to applicant." });
 };

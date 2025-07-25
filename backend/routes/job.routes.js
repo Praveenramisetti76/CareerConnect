@@ -17,6 +17,7 @@ import {
   getJobsByCompany,
   getJobById,
   getAllJobs,
+  sendApplicationStatusEmail,
 } from "../controllers/job.controller.js";
 
 import { authentication } from "../middleware/auth.js";
@@ -69,6 +70,12 @@ router.put(
   updateApplicationStatus
 ); //
 router.delete("/:companyId/delete/:jobId/", deleteJobPost); //
+router.post(
+  "/:applicationId/send-status-email",
+  role("recruiter"),
+  checkCompanyRole("recruiter", "admin"),
+  sendApplicationStatusEmail
+);
 
 router.get("/posts", getJobPosts); //
 router.get("/status/:jobId", getJobStatus); //

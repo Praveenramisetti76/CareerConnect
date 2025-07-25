@@ -7,6 +7,7 @@ import {
   getApplicationsForJob,
   getAllApplicationsForCompany,
   updateApplicationStatus,
+  sendApplicationStatusEmail,
 } from "@/api/jobApi";
 import { getUser } from "@/api/profileApi";
 import useAuthStore from "@/store/userStore";
@@ -44,13 +45,24 @@ import {
   FileText,
   Briefcase,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const ApplicationsDashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user, autoSendStatusEmail } = useAuthStore();
   const [selectedJob, setSelectedJob] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [pendingStatusChange, setPendingStatusChange] = useState(null); // { applicationId, newStatus }
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Fetch jobs posted by the company
   const {
@@ -103,15 +115,53 @@ const ApplicationsDashboard = () => {
     },
   });
 
+  // Send email mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: (applicationId) => sendApplicationStatusEmail(applicationId),
+    onSuccess: () => {
+      toast.success("Status update email sent to applicant!");
+    },
+    onError: (error) => {
+      toast.error(
+        error.response?.data?.message || "Failed to send status update email"
+      );
+    },
+  });
+
   // Filter applications based on status
   const filteredApplications = applications.filter((application) => {
     if (statusFilter === "all") return true;
     return application.status === statusFilter;
   });
 
-  // Handle status change
+  // Handle status change (show confirmation modal)
   const handleStatusChange = (applicationId, newStatus) => {
-    updateStatusMutation.mutate({ applicationId, status: newStatus });
+    setPendingStatusChange({ applicationId, newStatus });
+    setConfirmOpen(true);
+  };
+
+  // Confirm status change
+  const confirmStatusChange = () => {
+    if (pendingStatusChange) {
+      updateStatusMutation.mutate({
+        applicationId: pendingStatusChange.applicationId,
+        status: pendingStatusChange.newStatus,
+      }, {
+        onSuccess: () => {
+          if (autoSendStatusEmail) {
+            sendEmailMutation.mutate(pendingStatusChange.applicationId);
+          }
+        }
+      });
+    }
+    setConfirmOpen(false);
+    setPendingStatusChange(null);
+  };
+
+  // Cancel status change
+  const cancelStatusChange = () => {
+    setConfirmOpen(false);
+    setPendingStatusChange(null);
   };
 
   // Handle view profile
@@ -360,143 +410,171 @@ const ApplicationsDashboard = () => {
 
         {/* Applications Table */}
         {selectedJob && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            {applicationsLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : applicationsError ? (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-red-600 mb-2">
-                  Error Loading Applications
-                </h3>
-                <p className="text-gray-500">
-                  {applicationsError.response?.data?.message ||
-                    "Failed to load applications"}
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Applicant</TableHead>
-                    {selectedJob === "all" && <TableHead>Job Title</TableHead>}
-                    <TableHead>Email</TableHead>
-                    <TableHead>Applied Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Update Status</TableHead>
-                    <TableHead className="w-32">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredApplications.length === 0 ? (
+          <>
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Are you sure?</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to update the application status?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={cancelStatusChange}>
+                    Cancel
+                  </Button>
+                  <Button onClick={confirmStatusChange} disabled={updateStatusMutation.isPending}>
+                    Confirm
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              {applicationsLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : applicationsError ? (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium text-red-600 mb-2">
+                    Error Loading Applications
+                  </h3>
+                  <p className="text-gray-500">
+                    {applicationsError.response?.data?.message ||
+                      "Failed to load applications"}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell
-                        colSpan={selectedJob === "all" ? 7 : 6}
-                        className="h-32 text-center"
-                      >
-                        <div className="flex flex-col items-center justify-center">
-                          <Users className="h-12 w-12 text-gray-400 mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            {statusFilter === "all"
-                              ? "No applications yet"
-                              : `No ${statusFilter} applications`}
-                          </h3>
-                          <p className="text-gray-500">
-                            {statusFilter === "all"
-                              ? "Applications will appear here when candidates apply"
-                              : `No applications with ${statusFilter} status found`}
-                          </p>
-                        </div>
-                      </TableCell>
+                      <TableHead>Applicant</TableHead>
+                      {selectedJob === "all" && <TableHead>Job Title</TableHead>}
+                      <TableHead>Email</TableHead>
+                      <TableHead>Applied Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Update Status</TableHead>
+                      <TableHead className="w-32">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredApplications.map((application) => (
-                      <TableRow key={application._id}>
-                        <TableCell className="font-medium">
-                          {application.user?.name || "Name Not Available"}
-                        </TableCell>
-                        {selectedJob === "all" && (
-                          <TableCell className="font-medium">
-                            {application.job?.title ||
-                              "Job Title Not Available"}
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          {application.user?.email || "Email Not Available"}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(application.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(application.status)}>
-                            {application.status.charAt(0).toUpperCase() +
-                              application.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={application.status}
-                            onValueChange={(newStatus) =>
-                              handleStatusChange(application._id, newStatus)
-                            }
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="applied">Applied</SelectItem>
-                              <SelectItem value="reviewed">Reviewed</SelectItem>
-                              <SelectItem value="interview">
-                                Interview
-                              </SelectItem>
-                              <SelectItem value="hired">Hired</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleViewProfile(application.user?._id)
-                                }
-                                className="cursor-pointer"
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Profile
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleDownloadResume(
-                                    application.resume,
-                                    application.user?.name
-                                  )
-                                }
-                                className="cursor-pointer"
-                                disabled={!application.resume}
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Resume
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredApplications.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={selectedJob === "all" ? 7 : 6}
+                          className="h-32 text-center"
+                        >
+                          <div className="flex flex-col items-center justify-center">
+                            <Users className="h-12 w-12 text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                              {statusFilter === "all"
+                                ? "No applications yet"
+                                : `No ${statusFilter} applications`}
+                            </h3>
+                            <p className="text-gray-500">
+                              {statusFilter === "all"
+                                ? "Applications will appear here when candidates apply"
+                                : `No applications with ${statusFilter} status found`}
+                            </p>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+                    ) : (
+                      filteredApplications.map((application) => (
+                        <TableRow key={application._id}>
+                          <TableCell className="font-medium">
+                            {application.user?.name || "Name Not Available"}
+                          </TableCell>
+                          {selectedJob === "all" && (
+                            <TableCell className="font-medium">
+                              {application.job?.title ||
+                                "Job Title Not Available"}
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            {application.user?.email || "Email Not Available"}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(application.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(application.status)}>
+                              {application.status.charAt(0).toUpperCase() +
+                                application.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={application.status}
+                              onValueChange={(newStatus) =>
+                                handleStatusChange(application._id, newStatus)
+                              }
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="applied">Applied</SelectItem>
+                                <SelectItem value="reviewed">Reviewed</SelectItem>
+                                <SelectItem value="interview">
+                                  Interview
+                                </SelectItem>
+                                <SelectItem value="hired">Hired</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleViewProfile(application.user?._id)
+                                  }
+                                  className="cursor-pointer"
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDownloadResume(
+                                      application.resume,
+                                      application.user?.name
+                                    )
+                                  }
+                                  className="cursor-pointer"
+                                  disabled={!application.resume}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download Resume
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => sendEmailMutation.mutate(application._id)}
+                                  className="cursor-pointer"
+                                  disabled={sendEmailMutation.isPending}
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4 text-blue-600" />
+                                  Send Email
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </>
         )}
 
         {/* Empty State */}

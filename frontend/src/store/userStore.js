@@ -10,6 +10,8 @@ const useAuthStore = create(
       token: null,
       isInitialized: false,
       resumeUrl: null,
+      autoSendStatusEmail: false,
+      setAutoSendStatusEmail: (value) => set({ autoSendStatusEmail: value }),
 
       setToken: (token) => {
         if (token) {
@@ -87,25 +89,23 @@ const useAuthStore = create(
             password,
             role,
           });
+          if (res.data.twoFactorRequired) {
+            // Do not set token or fetch profile yet
+            return res.data;
+          }
           const { token } = res.data;
-
           get().setToken(token);
-
           const profile = await api.get("/auth/me");
           const userData = profile.data;
           set({ user: userData, isInitialized: true });
-
           // Update company store if user has company data
           if (userData.company && userData.companyRole) {
-            // userData.company is already the ID, not an object
             useCompanyStore
               .getState()
               .setCompanyData(userData.company, userData.companyRole);
           } else {
-            // Clear company store if user has no company association
             useCompanyStore.getState().resetCompany();
           }
-
           return { success: true };
         } catch (error) {
           console.error("Signup failed:", error);
@@ -113,42 +113,33 @@ const useAuthStore = create(
         }
       },
 
-      login: async (email, password) => {
+      login: async (email, password, otp) => {
         console.log("🔑 Login started for:", email);
         try {
-          const res = await api.post("/auth/login", { email, password });
+          const payload = otp ? { email, password, otp } : { email, password };
+          console.log("🔑 Login payload:", payload);
+          const res = await api.post("/auth/login", payload);
+          if (res.data.twoFactorRequired) {
+            // Do not set token or fetch profile yet
+            return { twoFactorRequired: true, email, password };
+          }
           const { token } = res.data;
-          console.log("🔑 Login: Token received from server");
-
           get().setToken(token);
-
           const profile = await api.get("/auth/me");
           const userData = profile.data;
-          console.log("🔑 Login: User profile fetched:", userData);
-
           set({ user: userData, isInitialized: true });
-
           // Update company store if user has company data
           if (userData.company && userData.companyRole) {
-            console.log("🔑 Login: Setting company data:", {
-              company: userData.company,
-              companyRole: userData.companyRole,
-            });
-            // userData.company is already the ID, not an object
             useCompanyStore
               .getState()
               .setCompanyData(userData.company, userData.companyRole);
           } else {
-            // Clear company store if user has no company association
-            console.log("🔑 Login: Clearing company store");
             useCompanyStore.getState().resetCompany();
           }
-
           console.log("🔑 Login successful:", { user: userData });
           return { success: true, user: userData };
         } catch (error) {
           console.error("🔑 Login failed:", error);
-          // Clean up on error
           localStorage.removeItem("token");
           set({ token: null, user: null });
           delete api.defaults.headers.common["Authorization"];
@@ -159,16 +150,22 @@ const useAuthStore = create(
       logout: () => {
         console.log("🔑 Logout: Starting logout process");
 
-        // Clear token from localStorage
-        localStorage.removeItem("token");
-        console.log("🔑 Logout: Token removed from localStorage");
+        // Clear all localStorage
+        localStorage.clear();
+        console.log("🔑 Logout: All localStorage cleared");
 
         // Clear Authorization header from axios
         delete api.defaults.headers.common["Authorization"];
         console.log("🔑 Logout: Authorization header cleared from axios");
 
         // Clear Zustand store state and reset initialization flag
-        set({ token: null, user: null, isInitialized: false });
+        set({
+          token: null,
+          user: null,
+          isInitialized: false,
+          resumeUrl: null,
+          autoSendStatusEmail: false,
+        });
         console.log(
           "🔑 Logout: Zustand store cleared and isInitialized set to false"
         );
@@ -245,6 +242,8 @@ const useAuthStore = create(
       partialize: (state) => ({
         token: state.token,
         user: state.user,
+        resumeUrl: state.resumeUrl, // Persist resumeUrl
+        autoSendStatusEmail: state.autoSendStatusEmail,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.token) {

@@ -2,6 +2,10 @@ import User from "../models/User.js";
 import { catchAndWrap } from "../utils/catchAndWrap.js";
 import { AppError } from "../utils/AppError.js";
 import { cloudinary } from "../config/cloudinary.js";
+import Company from "../models/Company.js";
+import Job from "../models/Job.js";
+import Article from "../models/Article.js";
+import bcrypt from "bcryptjs";
 
 const allowedFields = [
   "name",
@@ -299,11 +303,31 @@ export const deleteAvatar = async (req, res) => {
 export const deleteProfile = async (req, res) => {
   if (!req.user?.id) throw new AppError("Unauthorized", 401);
 
+  const { password } = req.body || req.body === undefined ? req.body : req.body;
+  if (!password) {
+    return res.status(400).json({ success: false, message: "Password is required to delete your account." });
+  }
+
   const user = await catchAndWrap(
     () => User.findById(req.user.id),
     "User not found",
     404
   );
+
+  if (!user) throw new AppError("User not found", 404);
+
+  // Check password
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ success: false, message: "Incorrect password. Account not deleted." });
+  }
+
+  // If user is admin, delete company, jobs, and articles
+  if (user.role === "recruiter" && user.companyRole === "admin" && user.company) {
+    await Job.deleteMany({ company: user.company });
+    await Article.deleteMany({ author: user.company, authorType: "Company" });
+    await Company.findByIdAndDelete(user.company);
+  }
 
   if (user.avatarPublicId)
     await cloudinary.uploader.destroy(user.avatarPublicId);

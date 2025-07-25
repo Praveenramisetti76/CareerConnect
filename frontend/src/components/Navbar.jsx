@@ -10,14 +10,26 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Bell, Settings as SettingsIcon } from "lucide-react";
 import { getAvatarBackgroundStyle } from "@/utils/avatarUtils";
+import { useQuery } from "@tanstack/react-query";
+import { getMyJoinRequestStatus } from "@/api/companyApi";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { companyRole } = useCompanyStore();
+
+  // Fetch company join requests for notification icon
+  const {
+    data: joinRequests = [],
+    isLoading: loadingRequests,
+  } = useQuery({
+    queryKey: ["myCompanyJoinRequests"],
+    queryFn: getMyJoinRequestStatus,
+    enabled: !!user,
+  });
 
   // Check if we should show the navbar
   const shouldShowNavbar = () => {
@@ -184,6 +196,39 @@ const Navbar = () => {
             </nav>
 
             <div className="flex items-center">
+              {/* Notification Bell Icon for Company Join Requests */}
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="relative cursor-pointer mr-4 pr-2"> {/* Increased right margin and added padding-right */}
+                      <Bell className="w-6 h-6 text-slate-600 hover:text-slate-900 transition-colors duration-200" />
+                      {joinRequests?.filter(r => r.status === "pending").length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center font-bold">
+                          {joinRequests.filter(r => r.status === "pending").length}
+                        </span>
+                      )}
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 bg-white/95 backdrop-blur-md border-slate-200/60 shadow-xl rounded-xl p-2">
+                    <div className="px-3 py-2 border-b border-slate-200/60 font-semibold text-slate-900 text-base">Company Join Requests</div>
+                    {loadingRequests ? (
+                      <div className="py-6 text-center text-slate-500 text-sm">Loading...</div>
+                    ) : joinRequests?.filter(r => r.status === "pending").length === 0 ? (
+                      <div className="py-6 text-center text-slate-500 text-sm">No pending requests</div>
+                    ) : (
+                      joinRequests.filter(r => r.status === "pending").map((req, idx) => (
+                        <div key={req._id || idx} className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-slate-50 rounded-lg transition-all duration-200">
+                          <div>
+                            <div className="font-medium text-slate-800">{req.company?.name || "Unknown Company"}</div>
+                            <div className="text-xs text-slate-500">Role: {req.roleTitle}</div>
+                          </div>
+                          <Link to="/profile" className="ml-2 text-blue-600 hover:underline text-xs font-semibold">View</Link>
+                        </div>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {isAuthPage ||
               (!user &&
                 ["/about", "/contact", "/features"].includes(
@@ -279,6 +324,17 @@ const Navbar = () => {
                           Profile
                         </span>
                       </DropdownMenuItem>
+                      {user.role === "candidate" && (
+                        <DropdownMenuItem
+                          onClick={() => navigate("/candidate/settings")}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors duration-200 cursor-pointer"
+                        >
+                          <SettingsIcon className="w-4 h-4 text-slate-500" />
+                          <span className="text-sm font-medium text-slate-700">
+                            Settings
+                          </span>
+                        </DropdownMenuItem>
+                      )}
                     </div>
                     <DropdownMenuSeparator className="bg-slate-200/60" />
                     <div className="py-1">

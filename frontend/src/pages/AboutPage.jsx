@@ -170,58 +170,6 @@ const AboutPage = () => {
             </div>
           </div>
         </div>
-
-        <h2 className="text-[#111518] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
-          Contact Us
-        </h2>
-        <p className="text-[#111518] text-base font-normal leading-normal pb-3 pt-1 px-4">
-          We'd love to hear from you! If you have any questions, feedback, or
-          inquiries, please don't hesitate to reach out to us.
-        </p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111518] text-base font-medium leading-normal pb-2">
-                Email
-              </p>
-              <Input
-                type="email"
-                name="email"
-                placeholder="yourname@email.com"
-                value={contactForm.email}
-                onChange={handleInputChange}
-                className="h-14 bg-gray-50 border-[#d5dce2] placeholder:text-[#5d7589] text-base font-normal focus:border-[#d5dce2]"
-                required
-              />
-            </label>
-          </div>
-
-          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111518] text-base font-medium leading-normal pb-2">
-                Message
-              </p>
-              <Textarea
-                name="message"
-                placeholder="Type your message here"
-                value={contactForm.message}
-                onChange={handleInputChange}
-                className="min-h-36 bg-gray-50 border-[#d5dce2] placeholder:text-[#5d7589] text-base font-normal focus:border-[#d5dce2] resize-none"
-                required
-              />
-            </label>
-          </div>
-
-          <div className="flex px-4 py-3 justify-start">
-            <Button
-              type="submit"
-              className="min-w-[84px] max-w-[480px] h-10 px-4 bg-[#c9dcec] hover:bg-[#b8d0e8] text-[#111518] text-sm font-bold rounded-full"
-            >
-              Send
-            </Button>
-          </div>
-        </form>
       </div>
     </div>
   );

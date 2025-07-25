@@ -14,8 +14,9 @@ export const updateUserRoleSchema = z.object({
 });
 
 export const logInSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string(),
+  otp: z.string().optional()
 });
 
 export const resetPasswordParamsSchema = z.object({

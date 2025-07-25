@@ -6,29 +6,64 @@ import {
   respondConnectionRequestSchema,
   removeConnectionSchema,
 } from "../zodSchema/connections.validation.js";
+import Application from "../models/Application.js";
+import User from "../models/User.js";
+
+import mongoose from "mongoose";
 
 const searchUsersForConnection = async (req, res) => {
   const search = req.query.search?.trim();
+  const companyId = req.query.companyId;
+
+  console.log("[DEBUG] searchUsersForConnection - search:", search, "companyId:", companyId);
+
   if (!search) throw new AppError("Search query is required", 400);
 
   const currentUserId = req.user._id;
 
+  // Base search conditions
+  let userQuery = {
+    _id: { $ne: currentUserId }, // Exclude current user
+    $or: [
+      { name: new RegExp(search, "i") },
+      { email: new RegExp(search, "i") },
+      { headline: new RegExp(search, "i") },
+      { location: new RegExp(search, "i") },
+      { skills: { $elemMatch: { $regex: search, $options: "i" } } },
+    ],
+  };
+
+  // ✅ If companyId is provided, filter only applicants for this company
+  if (companyId) {
+    try {
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+      const applicantUserIds = await Application.distinct("user", { company: companyObjectId });
+
+      console.log("[DEBUG] Applicant userIds for company:", companyId, applicantUserIds);
+
+      if (applicantUserIds.length > 0) {
+        userQuery._id.$in = applicantUserIds; // Add condition only if applicants exist
+      } else {
+        console.log("[DEBUG] No applicants found for this company");
+      }
+    } catch (err) {
+      console.error("[ERROR] Invalid companyId format:", err);
+    }
+  }
+
+  console.log("[DEBUG] Final userQuery:", JSON.stringify(userQuery));
+
+  // Fetch users
   const users = await catchAndWrap(
-    () =>
-      User.find({
-        _id: { $ne: currentUserId },
-        $or: [
-          { name: new RegExp(search, "i") },
-          { headline: new RegExp(search, "i") },
-          { location: new RegExp(search, "i") },
-          { skills: { $elemMatch: { $regex: search, $options: "i" } } },
-        ],
-      }).select("name email avatarUrl headline location"),
+    () => User.find(userQuery).select("name email avatarUrl headline location"),
     "Failed to search users"
   );
 
+  console.log("[DEBUG] Users found:", users.length);
+
   const userIds = users.map((u) => u._id);
 
+  // Fetch connection statuses
   const connections = await catchAndWrap(
     () =>
       Connection.find({
@@ -64,7 +99,7 @@ const searchUsersForConnection = async (req, res) => {
     }
   });
 
-  // Final response: user info + status
+  // Final response
   const results = users.map((user) => ({
     _id: user._id,
     name: user.name,
@@ -77,6 +112,9 @@ const searchUsersForConnection = async (req, res) => {
 
   res.status(200).json({ success: true, results });
 };
+
+export default searchUsersForConnection;
+
 
 const sendConnectionRequest = async (req, res) => {
   const parsed = sendConnectionRequestSchema.safeParse(req.body);

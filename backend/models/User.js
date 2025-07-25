@@ -73,6 +73,25 @@ const userSchema = new Schema(
 
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+
+    // Incoming company join requests
+    companyJoinRequests: [
+      {
+        company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+        roleTitle: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["pending", "accepted", "rejected"],
+          default: "pending",
+        },
+        requestedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    // 2FA fields
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorTempSecret: String, // hashed OTP
+    twoFactorOTPExpires: Date,
   },
   {
     timestamps: true,

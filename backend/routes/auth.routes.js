@@ -7,6 +7,10 @@ import {
   updateUserRole,
   forgotPassword,
   resetPassword,
+  enable2FA,
+  verify2FA,
+  disable2FA,
+  verifySignup2FA,
 } from "../controllers/auth.controller.js";
 import { authentication } from "../middleware/auth.js";
 
@@ -19,5 +23,9 @@ router.post("/logout", logOut);
 router.patch("/update-role", updateUserRole);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token/:id", resetPassword);
+router.post("/enable-2fa", authentication, enable2FA);
+router.post("/verify-2fa", authentication, verify2FA);
+router.post("/disable-2fa", authentication, disable2FA);
+router.post("/verify-signup-2fa", verifySignup2FA);
 
 export default router;

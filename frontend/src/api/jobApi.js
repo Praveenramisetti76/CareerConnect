@@ -1,8 +1,10 @@
 import axios from "@/lib/axios";
 
 // Get all jobs
-export const getAllJobs = () => {
-  return axios.get("/job/all");
+export const getAllJobs = (search = "") => {
+  const params = {};
+  if (search) params.search = search;
+  return axios.get("/job/all", { params });
 };
 
 // Get job by ID
@@ -87,4 +89,9 @@ export const updateApplicationStatus = (companyId, applicationId, status) => {
   return axios.put(`/job/${companyId}/applications/${applicationId}/status`, {
     status,
   });
+};
+
+// Send status update email to applicant
+export const sendApplicationStatusEmail = (applicationId) => {
+  return axios.post(`/job/${applicationId}/send-status-email`);
 };

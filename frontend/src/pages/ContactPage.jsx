@@ -12,6 +12,7 @@ import {
   Linkedin,
 } from "lucide-react";
 import { toast } from "sonner";
+import { submitContactForm } from "@/api/dashboardApi";
 
 const ContactPage = () => {
   const [contactForm, setContactForm] = useState({
@@ -21,11 +22,17 @@ const ContactPage = () => {
     message: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    toast.success("Thank you for your message! We'll get back to you soon.");
-    setContactForm({ name: "", email: "", subject: "", message: "" });
+    try {
+      await submitContactForm(contactForm);
+      toast.success("Thank you for your message! We'll get back to you soon.");
+      setContactForm({ name: "", email: "", subject: "", message: "" });
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to submit the contact form."
+      );
+    }
   };
 
   const handleInputChange = (e) => {

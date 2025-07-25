@@ -115,7 +115,14 @@ const EditProfilePage = () => {
         headline: profile.headline || "",
         about: profile.about || "",
         location: profile.location || "",
-        skills: profile.skills || [],
+        skills: Array.isArray(profile.skills)
+          ? profile.skills
+          : typeof profile.skills === "string"
+          ? profile.skills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
         isOpenToWork: profile.isOpenToWork || false,
         social: {
           linkedin: profile.social?.linkedin || "",
@@ -146,7 +153,20 @@ const EditProfilePage = () => {
   }, [profile, form]);
 
   const onSubmit = (data) => {
-    updateProfileMutation.mutate(data);
+    // Ensure skills is always an array
+    let skillsArr = [];
+    if (Array.isArray(data.skills)) {
+      skillsArr = data.skills;
+    } else if (typeof data.skills === "string") {
+      skillsArr = data.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    updateProfileMutation.mutate({
+      ...data,
+      skills: skillsArr,
+    });
   };
 
   if (isLoading) {
@@ -328,19 +348,19 @@ const EditProfilePage = () => {
                         </FormLabel>
                         <FormControl>
                           <Input
-                            {...field}
                             placeholder="e.g., JavaScript, React, Node.js (comma separated)"
                             value={
                               Array.isArray(field.value)
                                 ? field.value.join(", ")
-                                : field.value
+                                : field.value || ""
                             }
                             onChange={(e) => {
-                              const skills = e.target.value
+                              // Store as array in form state
+                              const arr = e.target.value
                                 .split(",")
-                                .map((skill) => skill.trim())
+                                .map((s) => s.trim())
                                 .filter(Boolean);
-                              field.onChange(skills);
+                              field.onChange(arr);
                             }}
                             className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           />

@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 const JobSearchPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     location: "",
     jobType: "",
@@ -31,14 +32,22 @@ const JobSearchPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredJobs, setFilteredJobs] = useState([]);
 
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   // Fetch all jobs
   const {
     data: jobsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["allJobs"],
-    queryFn: getAllJobs,
+    queryKey: ["allJobs", debouncedSearchTerm],
+    queryFn: () => getAllJobs(debouncedSearchTerm),
     refetchOnWindowFocus: false,
   });
 
@@ -47,17 +56,6 @@ const JobSearchPage = () => {
   // Filter and search jobs
   useEffect(() => {
     let filtered = jobs;
-
-    // Apply search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (job) =>
-          job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
 
     // Apply filters
     if (filters.location && filters.location !== "all") {
@@ -98,7 +96,7 @@ const JobSearchPage = () => {
     }
 
     setFilteredJobs(filtered);
-  }, [jobs, searchTerm, filters, sortBy]);
+  }, [jobs, filters, sortBy]);
 
   // Format date
   const formatDate = (dateString) => {

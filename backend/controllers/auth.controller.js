@@ -5,6 +5,7 @@ import { AppError } from "../utils/AppError.js";
 import { signToken } from "../utils/jwt.js";
 import { catchAndWrap } from "../utils/catchAndWrap.js";
 import { sendPasswordReset } from "../utils/sendEmail.js";
+import { send2FAOtp } from "../utils/sendEmail.js";
 import {
   signUpSchema,
   logInSchema,
@@ -27,9 +28,40 @@ const registerUser = async (req, res) => {
   const hashed = await bcrypt.hash(password, 10);
   const user = await User.create({ name, email, password: hashed, role });
 
-  const token = signToken({ id: user._id, role: user.role });
+  // 2FA for signup: generate OTP, store hashed, send email, do not issue token yet
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  user.twoFactorTempSecret = hashedOtp;
+  user.twoFactorOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  await user.save();
+  await send2FAOtp(user.email, otp);
 
   res.status(201).json({
+    message: "OTP sent to your email. Please verify to complete registration.",
+    twoFactorRequired: true,
+    userId: user._id,
+    email: user.email,
+  });
+};
+
+const verifySignup2FA = async (req, res) => {
+  const { userId, otp } = req.body;
+  const user = await User.findById(userId);
+  if (!user)
+    return res.status(404).json({ success: false, message: "User not found" });
+  if (!user.twoFactorTempSecret || !user.twoFactorOTPExpires)
+    return res.status(400).json({ success: false, message: "No OTP requested." });
+  if (user.twoFactorOTPExpires < new Date())
+    return res.status(400).json({ success: false, message: "OTP expired." });
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  if (hashedOtp !== user.twoFactorTempSecret)
+    return res.status(400).json({ success: false, message: "Invalid OTP." });
+  user.twoFactorEnabled = true;
+  user.twoFactorTempSecret = undefined;
+  user.twoFactorOTPExpires = undefined;
+  await user.save();
+  const token = signToken({ id: user._id, role: user.role });
+  res.status(200).json({
     message: "Registration successful",
     token,
     user: {
@@ -41,21 +73,135 @@ const registerUser = async (req, res) => {
   });
 };
 
+const enable2FA = async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user)
+    return res.status(404).json({ success: false, message: "User not found" });
+  if (user.twoFactorEnabled)
+    return res
+      .status(400)
+      .json({ success: false, message: "2FA is already enabled." });
+
+  // Generate OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  user.twoFactorTempSecret = hashedOtp;
+  user.twoFactorOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  await user.save();
+  await send2FAOtp(user.email, otp);
+  res.status(200).json({ success: true, message: "OTP sent to your email." });
+};
+
+const verify2FA = async (req, res) => {
+  const { otp } = req.body;
+  const user = await User.findById(req.user.id);
+  if (!user)
+    return res.status(404).json({ success: false, message: "User not found" });
+  if (!user.twoFactorTempSecret || !user.twoFactorOTPExpires)
+    return res
+      .status(400)
+      .json({ success: false, message: "No OTP requested." });
+  if (user.twoFactorOTPExpires < new Date())
+    return res.status(400).json({ success: false, message: "OTP expired." });
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  if (hashedOtp !== user.twoFactorTempSecret)
+    return res.status(400).json({ success: false, message: "Invalid OTP." });
+  user.twoFactorEnabled = true;
+  user.twoFactorTempSecret = undefined;
+  user.twoFactorOTPExpires = undefined;
+  await user.save();
+  res.status(200).json({ success: true, message: "2FA enabled successfully." });
+};
+
+// 2FA login step: after password, send OTP
 const loginUser = async (req, res) => {
+  console.log("[loginUser] Request body:", req.body);
   const result = logInSchema.safeParse(req.body);
   if (!result.success) {
+    console.log("[loginUser] Invalid input:", result.error);
     throw new AppError("Invalid Input", 400);
   }
 
-  const { email, password } = result.data;
+  const { email, password, otp } = result.data;
+  console.log("[loginUser] Parsed data:", { email, password, otp });
 
   const user = await User.findOne({ email });
-  if (!user) throw new AppError("Invalid email or password", 401);
+  if (!user) {
+    console.log("[loginUser] User not found for email:", email);
+    throw new AppError("Invalid email or password", 401);
+  }
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new AppError("Invalid email or password", 401);
+  if (!isMatch) {
+    console.log("[loginUser] Password mismatch for email:", email);
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  // If 2FA is enabled, require OTP
+  if (user.twoFactorEnabled) {
+    console.log("[loginUser] 2FA is enabled for user:", email);
+    // If OTP is not provided, send OTP and require it
+    if (!otp) {
+      const generatedOtp = Math.floor(
+        100000 + Math.random() * 900000
+      ).toString();
+      const hashedOtp = crypto
+        .createHash("sha256")
+        .update(generatedOtp)
+        .digest("hex");
+      user.twoFactorTempSecret = hashedOtp;
+      user.twoFactorOTPExpires = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save();
+      console.log(
+        "[loginUser] Generated and saved OTP for user:",
+        email,
+        "OTP:",
+        generatedOtp
+      );
+      await send2FAOtp(user.email, generatedOtp);
+      console.log("[loginUser] Sent OTP email to:", user.email);
+      return res.status(206).json({
+        success: false,
+        message: "OTP sent to your email. Please verify to complete login.",
+        twoFactorRequired: true,
+      });
+    } else {
+      // Verify OTP
+      console.log(
+        "[loginUser] Verifying OTP for user:",
+        email,
+        "OTP provided:",
+        otp
+      );
+      if (!user.twoFactorTempSecret || !user.twoFactorOTPExpires) {
+        console.log("[loginUser] No OTP requested for user:", email);
+        throw new AppError("No OTP requested.", 400);
+      }
+      if (user.twoFactorOTPExpires < new Date()) {
+        console.log("[loginUser] OTP expired for user:", email);
+        throw new AppError("OTP expired.", 400);
+      }
+      const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+      if (hashedOtp !== user.twoFactorTempSecret) {
+        console.log(
+          "[loginUser] Invalid OTP for user:",
+          email,
+          "Provided:",
+          otp,
+          "Expected:",
+          user.twoFactorTempSecret
+        );
+        throw new AppError("Invalid OTP.", 400);
+      }
+      user.twoFactorTempSecret = undefined;
+      user.twoFactorOTPExpires = undefined;
+      await user.save();
+      console.log("[loginUser] OTP validated and cleared for user:", email);
+    }
+  }
 
   const token = signToken({ id: user._id, role: user.role });
+  console.log("[loginUser] Login successful for user:", email);
 
   res.status(200).json({
     message: "Login successful",
@@ -82,6 +228,7 @@ const getMe = async (req, res) => {
     role: user.role,
     company: user.company ? user.company._id : null,
     companyRole: user.companyRole || null,
+    twoFactorEnabled: user.twoFactorEnabled || false,
   });
 };
 
@@ -176,12 +323,33 @@ const resetPassword = async (req, res) => {
   res.status(200).json({ message: "Password was reset successfully." });
 };
 
+const disable2FA = async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user)
+    return res.status(404).json({ success: false, message: "User not found" });
+  if (!user.twoFactorEnabled)
+    return res
+      .status(400)
+      .json({ success: false, message: "2FA is not enabled." });
+  user.twoFactorEnabled = false;
+  user.twoFactorTempSecret = undefined;
+  user.twoFactorOTPExpires = undefined;
+  await user.save();
+  res
+    .status(200)
+    .json({ success: true, message: "2FA disabled successfully." });
+};
+
 export {
   registerUser,
   loginUser,
+  verify2FA,
+  enable2FA,
   getMe,
   logOut,
   updateUserRole,
   forgotPassword,
   resetPassword,
+  disable2FA,
+  verifySignup2FA,
 };

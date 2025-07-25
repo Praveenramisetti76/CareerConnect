@@ -135,29 +135,34 @@ export const getSingleArticle = async (req, res) => {
     throw new AppError("Invalid article ID", 400, parsed.error.errors);
   }
 
+  // Increment views atomically and fetch the updated article
   const article = await catchAndWrap(async () => {
-    const article = await Article.findById(parsed.data.articleId);
-    if (!article) return null;
+    const updatedArticle = await Article.findByIdAndUpdate(
+      parsed.data.articleId,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    if (!updatedArticle) return null;
 
     // Populate comments with user data
-    await article.populate("comments.user", "name email");
+    await updatedArticle.populate("comments.user", "name email");
 
     let populatedAuthor = null;
-    if (article.authorType === "User" || article.authorType === "user") {
-      populatedAuthor = await User.findById(article.author).select(
+    if (updatedArticle.authorType === "User" || updatedArticle.authorType === "user") {
+      populatedAuthor = await User.findById(updatedArticle.author).select(
         "name email"
       );
     } else if (
-      article.authorType === "Company" ||
-      article.authorType === "company"
+      updatedArticle.authorType === "Company" ||
+      updatedArticle.authorType === "company"
     ) {
-      populatedAuthor = await Company.findById(article.author).select(
+      populatedAuthor = await Company.findById(updatedArticle.author).select(
         "name email"
       );
     }
 
     // Convert to plain object and add populated author
-    const articleObj = article.toObject();
+    const articleObj = updatedArticle.toObject();
     articleObj.author = populatedAuthor;
 
     return articleObj;

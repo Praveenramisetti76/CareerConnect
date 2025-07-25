@@ -44,9 +44,9 @@ const ArticleDetails = () => {
   // Like mutation
   const likeMutation = useMutation({
     mutationFn: () => toggleLike(articleId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(["article", articleId]);
-      toast.success("Article liked!");
+      toast.success(data?.message || (data?.isLiked ? "Article liked!" : "Like removed!"));
     },
     onError: () => {
       toast.error("Failed to like article");
@@ -247,22 +247,6 @@ const ArticleDetails = () => {
                 }`}
               />
               <span>{article.likes?.length || 0}</span>
-            </Button>
-
-            <Button className="group flex items-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-sm border border-slate-200/60 text-slate-700 hover:bg-white hover:border-slate-300/60 rounded-xl font-medium transition-all duration-200">
-              <Share2
-                size={16}
-                className="transition-transform group-hover:scale-110"
-              />
-              Share
-            </Button>
-
-            <Button className="group flex items-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-sm border border-slate-200/60 text-slate-700 hover:bg-white hover:border-slate-300/60 rounded-xl font-medium transition-all duration-200">
-              <Bookmark
-                size={16}
-                className="transition-transform group-hover:scale-110"
-              />
-              Save
             </Button>
           </div>
         </header>

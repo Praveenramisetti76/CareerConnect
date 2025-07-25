@@ -5,6 +5,7 @@ import {
   getDashboardStats,
   getTopJobs,
   getCompanyMetrics,
+  submitContactForm,
 } from "../controllers/dashboard.controller.js";
 
 const router = express.Router();
@@ -21,5 +22,7 @@ router.get("/top-jobs", getTopJobs);
 
 // Company metrics
 router.get("/company-metrics", getCompanyMetrics);
+
+router.post("/contact", submitContactForm);
 
 export default router;

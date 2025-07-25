@@ -57,7 +57,7 @@ export const deleteCompany = async (companyId) => {
   return response.data;
 };
 
-export const requestToJoinCompany = async (companyId, roleTitle) => {
+export const requestToJoinCompany = async (companyId, { roleTitle }) => {
   const response = await api.post(`/company/${companyId}/request`, {
     roleTitle,
   });
@@ -102,4 +102,9 @@ export const getMyCompanyRole = async (companyId) => {
 export const getMyJoinRequestStatus = async () => {
   const response = await api.get("/company/my-join-requests");
   return response.data.requests;
+};
+
+export const respondToCompanyJoinRequest = async (companyId, status) => {
+  const response = await api.put(`/company/${companyId}/requests/respond`, { status });
+  return response.data;
 };

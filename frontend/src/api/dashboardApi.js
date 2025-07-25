@@ -24,3 +24,8 @@ export const getCompanyMetrics = async () => {
   const response = await api.get("/dashboard/company-metrics");
   return response.data.data;
 };
+
+export const submitContactForm = async (formData) => {
+  const response = await api.post("/dashboard/contact", formData);
+  return response.data;
+};
