@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import User from "../models/User.js";
+import PendingUser from "../models/PendingUser.js";
 import { AppError } from "../utils/AppError.js";
 import { signToken } from "../utils/jwt.js";
 import { catchAndWrap } from "../utils/catchAndWrap.js";
@@ -22,44 +23,63 @@ const registerUser = async (req, res) => {
 
   const { name, email, password, role } = result.data;
 
+  // Check if user already exists in User
   const isExistingUser = await User.findOne({ email });
   if (isExistingUser) throw new AppError("User already exists", 409);
 
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashed, role });
+  // If a pending user exists, delete it before creating a new one
+  const isPending = await PendingUser.findOne({ email });
+  if (isPending) await PendingUser.deleteOne({ email });
 
-  // 2FA for signup: generate OTP, store hashed, send email, do not issue token yet
+  const hashed = await bcrypt.hash(password, 10);
+  // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-  user.twoFactorTempSecret = hashedOtp;
-  user.twoFactorOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-  await user.save();
-  await send2FAOtp(user.email, otp);
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+  // Store in PendingUser
+  const pending = await PendingUser.create({
+    name,
+    email,
+    password: hashed,
+    role,
+    twoFactorTempSecret: hashedOtp,
+    twoFactorOTPExpires: otpExpires,
+  });
+  await send2FAOtp(email, otp);
 
   res.status(201).json({
     message: "OTP sent to your email. Please verify to complete registration.",
     twoFactorRequired: true,
-    userId: user._id,
-    email: user.email,
+    userId: pending._id,
+    email: pending.email,
   });
 };
 
 const verifySignup2FA = async (req, res) => {
   const { userId, otp } = req.body;
-  const user = await User.findById(userId);
-  if (!user)
-    return res.status(404).json({ success: false, message: "User not found" });
-  if (!user.twoFactorTempSecret || !user.twoFactorOTPExpires)
+  const pending = await PendingUser.findById(userId);
+  if (!pending)
+    return res.status(404).json({ success: false, message: "Pending registration not found" });
+  if (!pending.twoFactorTempSecret || !pending.twoFactorOTPExpires)
     return res.status(400).json({ success: false, message: "No OTP requested." });
-  if (user.twoFactorOTPExpires < new Date())
+  if (pending.twoFactorOTPExpires < new Date())
     return res.status(400).json({ success: false, message: "OTP expired." });
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-  if (hashedOtp !== user.twoFactorTempSecret)
+  if (hashedOtp !== pending.twoFactorTempSecret)
     return res.status(400).json({ success: false, message: "Invalid OTP." });
-  user.twoFactorEnabled = true;
-  user.twoFactorTempSecret = undefined;
-  user.twoFactorOTPExpires = undefined;
-  await user.save();
+
+  // Create user in User collection
+  const user = await User.create({
+    name: pending.name,
+    email: pending.email,
+    password: pending.password,
+    role: pending.role,
+    twoFactorEnabled: true,
+  });
+  // Remove pending registration by email
+  await PendingUser.deleteOne({ email: pending.email });
+
   const token = signToken({ id: user._id, role: user.role });
   res.status(200).json({
     message: "Registration successful",
@@ -232,6 +252,21 @@ const getMe = async (req, res) => {
   });
 };
 
+const updateMe = async (req, res) => {
+  const userId = req.user._id;
+  const { role } = req.body;
+  if (!role || !["candidate", "recruiter"].includes(role)) {
+    return res.status(400).json({ success: false, message: "Invalid role." });
+  }
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+  user.role = role;
+  await user.save();
+  res.status(200).json({ success: true, user });
+};
+
 const logOut = async (req, res) => {
   res.status(200).json({ message: "Logged out" });
 };
@@ -352,4 +387,5 @@ export {
   resetPassword,
   disable2FA,
   verifySignup2FA,
+  updateMe,
 };

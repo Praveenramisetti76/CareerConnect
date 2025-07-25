@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 import useAuthStore from "@/store/userStore";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SettingsPage = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -72,10 +73,41 @@ const SettingsPage = () => {
     }
   };
 
+  const handleRoleChange = async (newRole) => {
+    try {
+      const res = await api.patch("/auth/me", { role: newRole });
+      toast.success(`Role changed to ${newRole}`);
+      // Update the user in the store with the backend response
+      useAuthStore.getState().setUser(res.data.user);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to change role.");
+    }
+  };
+
   return (
     <div className="p-8 max-w-2xl mx-auto relative">
       <h1 className="text-3xl font-bold mb-4">Settings</h1>
       <ul className="mb-8">
+        {/* Role change dropdown */}
+        <li className="flex items-center justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50 mb-2">
+          <span className="flex items-center gap-2 text-gray-800 font-medium">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 11c0-1.104.896-2 2-2s2 .896 2 2-.896 2-2 2-2-.896-2-2zm0 0V7m0 4v4m0 0c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2z" /></svg>
+            Change Global Role
+          </span>
+          <Select
+            value={user?.role}
+            onValueChange={handleRoleChange}
+            disabled={!user || (user.role !== "candidate" && user.role !== "recruiter")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {user?.role === "candidate" && <SelectItem value="recruiter">Recruiter</SelectItem>}
+              {user?.role === "recruiter" && <SelectItem value="candidate">Candidate</SelectItem>}
+            </SelectContent>
+          </Select>
+        </li>
         {user?.role === "recruiter" && (
           <li className="flex items-center justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50 mb-2">
             <span className="flex items-center gap-2 text-gray-800 font-medium">

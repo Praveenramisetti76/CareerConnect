@@ -601,6 +601,8 @@ export const updateCompanyRole = async (req, res) => {
     // Update user role if needed (recruiter/admin should have role=recruiter)
     if (roleTitle === "recruiter" || roleTitle === "admin") {
       user.role = "recruiter";
+    } else if (roleTitle === "employee") {
+      user.role = "candidate";
     }
     await user.save();
   }
@@ -658,8 +660,8 @@ export const removeMemberFromCompany = async (req, res) => {
   if (user && user.company?.toString() === companyId) {
     user.company = null;
     user.companyRole = null;
-    // Reset role to candidate if they were a recruiter
-    if (user.role === "recruiter") {
+    // Reset role to candidate if they were a recruiter or employee
+    if (user.role === "recruiter" || user.role === "employee") {
       user.role = "candidate";
     }
     await user.save();

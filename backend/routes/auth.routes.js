@@ -11,6 +11,7 @@ import {
   verify2FA,
   disable2FA,
   verifySignup2FA,
+  updateMe,
 } from "../controllers/auth.controller.js";
 import { authentication } from "../middleware/auth.js";
 
@@ -19,6 +20,7 @@ const router = Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/me", authentication, getMe);
+router.patch("/me", authentication, updateMe);
 router.post("/logout", logOut);
 router.patch("/update-role", updateUserRole);
 router.post("/forgot-password", forgotPassword);

@@ -108,13 +108,15 @@ const AboutPage = () => {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
           <div className="flex flex-col gap-3 text-center pb-3">
             <div className="px-4">
-              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                SC
-              </div>
+              <img
+                src="https://res.cloudinary.com/drxs8mnvl/image/upload/v1753434110/bunny_d8sqzq.jpg"
+                alt="Avinash Reddy"
+                className="w-full aspect-square rounded-full object-cover"
+              />
             </div>
             <div>
               <p className="text-[#111518] text-base font-medium leading-normal">
-                Sarah Chen
+                Avinash Reddy
               </p>
               <p className="text-[#5d7589] text-sm font-normal leading-normal">
                 CEO
@@ -124,13 +126,15 @@ const AboutPage = () => {
 
           <div className="flex flex-col gap-3 text-center pb-3">
             <div className="px-4">
-              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-2xl">
-                DL
-              </div>
+              <img
+                src="https://res.cloudinary.com/drxs8mnvl/image/upload/v1753434109/puli_a9hpr3.jpg"
+                alt="Madhav Chundi"
+                className="w-full aspect-square rounded-full object-cover"
+              />
             </div>
             <div>
               <p className="text-[#111518] text-base font-medium leading-normal">
-                David Lee
+                Madhav Chundi
               </p>
               <p className="text-[#5d7589] text-sm font-normal leading-normal">
                 CTO
@@ -146,26 +150,10 @@ const AboutPage = () => {
             </div>
             <div>
               <p className="text-[#111518] text-base font-medium leading-normal">
-                Emily Rodriguez
+                Praveen Ramisetty
               </p>
               <p className="text-[#5d7589] text-sm font-normal leading-normal">
                 Head of Marketing
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 text-center pb-3">
-            <div className="px-4">
-              <div className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-2xl">
-                MB
-              </div>
-            </div>
-            <div>
-              <p className="text-[#111518] text-base font-medium leading-normal">
-                Michael Brown
-              </p>
-              <p className="text-[#5d7589] text-sm font-normal leading-normal">
-                Head of Product
               </p>
             </div>
           </div>

@@ -45,6 +45,9 @@ import FeaturesPage from "@/pages/FeaturesPage";
 import PublicPageWrapper from "@/components/PublicPageWrapper";
 import NotFound from "@/pages/NotFound";
 import SettingsPage from "@/pages/shared/SettingsPage";
+import Unauthorized from "@/pages/Unauthorized";
+import HomePage from "@/pages/HomePage";
+import Navbar from "@/components/Navbar";
 
 const AppRouter = () => {
   const { loading } = useInitializeAuth();
@@ -564,25 +567,16 @@ const AppRouter = () => {
         }
       />
 
+      {/* Home Page Route */}
+      <Route path="/" element={<><Navbar /><HomePage /></>} />
+
       {/* Unauthorized Route */}
       <Route
         path="/unauthorized"
-        element={
-          <div className="flex justify-center items-center min-h-screen">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-red-600 mb-4">
-                Unauthorized Access
-              </h2>
-              <p className="text-gray-600">
-                You don't have permission to access this page.
-              </p>
-            </div>
-          </div>
-        }
+        element={<Unauthorized />}
       />
 
       {/* Default redirects */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

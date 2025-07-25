@@ -248,6 +248,7 @@ const EditProfilePage = () => {
                             {...field}
                             type="email"
                             className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            disabled
                           />
                         </FormControl>
                         <FormMessage />
