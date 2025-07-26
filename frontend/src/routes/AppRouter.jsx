@@ -568,13 +568,18 @@ const AppRouter = () => {
       />
 
       {/* Home Page Route */}
-      <Route path="/" element={<><Navbar /><HomePage /></>} />
+      <Route
+        path="/"
+        element={
+          <>
+            <Navbar />
+            <HomePage />
+          </>
+        }
+      />
 
       {/* Unauthorized Route */}
-      <Route
-        path="/unauthorized"
-        element={<Unauthorized />}
-      />
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Default redirects */}
       <Route path="*" element={<NotFound />} />

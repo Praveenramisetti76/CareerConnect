@@ -60,9 +60,13 @@ const verifySignup2FA = async (req, res) => {
   const { userId, otp } = req.body;
   const pending = await PendingUser.findById(userId);
   if (!pending)
-    return res.status(404).json({ success: false, message: "Pending registration not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Pending registration not found" });
   if (!pending.twoFactorTempSecret || !pending.twoFactorOTPExpires)
-    return res.status(400).json({ success: false, message: "No OTP requested." });
+    return res
+      .status(400)
+      .json({ success: false, message: "No OTP requested." });
   if (pending.twoFactorOTPExpires < new Date())
     return res.status(400).json({ success: false, message: "OTP expired." });
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
@@ -241,6 +245,16 @@ const getMe = async (req, res) => {
   const user = await catchAndWrap(() =>
     User.findById(req.user._id).populate("company")
   );
+  // If global role is recruiter and companyRole is employee, update global role to candidate
+  if (user.role === "recruiter" && user.companyRole === "employee") {
+    user.role = "candidate";
+    await user.save();
+  }
+  // If global role is candidate and companyRole is recruiter or admin, update global role to recruiter
+  if (user.role === "candidate" && ["recruiter", "admin"].includes(user.companyRole)) {
+    user.role = "recruiter";
+    await user.save();
+  }
   res.status(200).json({
     id: user._id,
     name: user.name,
