@@ -6,8 +6,11 @@ import Article from "./models/Article.js";
 import Application from "./models/Application.js";
 import Job from "./models/Job.js";
 import { faker } from "@faker-js/faker";
+import dotenv from "dotenv";
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
+dotenv.config();
+const MONGO_URI = process.env.MONGO_URI;
+
 
 async function seed() {
   await mongoose.connect(MONGO_URI);
@@ -23,16 +26,52 @@ async function seed() {
   ]);
   console.log("✅ Cleared existing data");
 
-  // Seed Users
+  // --- INDUSTRY ENUMS ---
+  const industries = [
+    "Technology",
+    "Finance",
+    "Healthcare",
+    "Education",
+    "Retail",
+    "Manufacturing",
+    "Construction",
+    "Transportation",
+    "Hospitality",
+    "Real Estate",
+    "Energy",
+    "Telecommunications",
+    "Media",
+    "Entertainment",
+    "Legal",
+    "Consulting",
+    "Government",
+    "Nonprofit",
+    "Agriculture",
+    "Aerospace",
+    "Automotive",
+    "Pharmaceutical",
+    "Food & Beverage",
+    "Insurance",
+    "Logistics",
+    "Marketing",
+    "Advertising",
+    "Research",
+    "Sports",
+    "Travel",
+    "Utilities",
+    "Other",
+  ];
+
+  // Seed Users (increase volume)
   const users = [];
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 200; i++) {
     const hashedPassword = await bcrypt.hash("Password123!", 10);
     users.push(
       new User({
         name: faker.person.fullName(),
         email: faker.internet.email(),
         password: hashedPassword,
-        role: i < 5 ? "recruiter" : "candidate",
+        role: i < 40 ? "recruiter" : "candidate",
         headline: faker.person.jobTitle(),
         about: faker.lorem.sentences(2),
         location: faker.location.city(),
@@ -46,8 +85,17 @@ async function seed() {
             "AWS",
             "Docker",
             "TypeScript",
+            "SQL",
+            "C++",
+            "Go",
+            "Ruby",
+            "PHP",
+            "Swift",
+            "Kotlin",
+            "Scala",
+            "Rust",
           ])
-          .slice(0, 3),
+          .slice(0, 4),
         isOpenToWork: i % 2 === 0,
         social: {
           github: faker.internet.username(),
@@ -79,12 +127,14 @@ async function seed() {
   await User.insertMany(users);
   console.log("✅ Seeded Users");
 
+  // Seed 100 Companies, each with a unique industry (repeat industries if needed)
   const companies = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 100; i++) {
+    const industry = industries[i % industries.length];
     companies.push(
       new Company({
-        name: faker.company.name(),
-        industry: faker.commerce.department(),
+        name: faker.company.name() + " " + i,
+        industry,
         description: faker.company.catchPhrase(),
         location: faker.location.city(),
         website: faker.internet.url(),
@@ -97,22 +147,67 @@ async function seed() {
           "1000+",
         ]),
         logo: faker.image.urlPicsumPhotos({ width: 300, height: 300 }),
-        admins: [users[i]._id], // ✅ Just ObjectIds
+        admins: [users[i]._id],
         members: [
           {
             user: users[i]._id,
-            role: "admin", // ✅ Valid enum value
+            role: "admin",
           },
         ],
+        specialties: faker.helpers.arrayElements(
+          [
+            "Cloud Computing",
+            "AI",
+            "ML",
+            "Blockchain",
+            "IoT",
+            "Cybersecurity",
+            "E-commerce",
+            "Fintech",
+            "Edtech",
+            "Medtech",
+            "SaaS",
+            "PaaS",
+            "DevOps",
+            "Big Data",
+            "Analytics",
+            "Mobile Apps",
+            "Web Apps",
+            "AR/VR",
+            "Gaming",
+            "Robotics",
+          ],
+          3
+        ),
+        benefits: faker.helpers.arrayElements(
+          [
+            "Health Insurance",
+            "Remote Work",
+            "Flexible Hours",
+            "Stock Options",
+            "Paid Time Off",
+            "Retirement Plan",
+            "Wellness Programs",
+            "Learning Budget",
+          ],
+          3
+        ),
+        socialLinks: {
+          linkedin: faker.internet.url(),
+          twitter: faker.internet.url(),
+          github: faker.internet.url(),
+        },
+        foundedYear: faker.date.past({ years: 50 }).getFullYear(),
+        verified: faker.datatype.boolean(),
       })
     );
   }
   await Company.insertMany(companies);
   console.log("✅ Seeded Companies");
 
-  // Seed Jobs
+  // Seed Jobs (increase volume)
   const jobs = [];
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 300; i++) {
     const company = companies[i % companies.length];
     jobs.push(
       new Job({
@@ -127,8 +222,17 @@ async function seed() {
             "AWS",
             "Docker",
             "TypeScript",
+            "SQL",
+            "C++",
+            "Go",
+            "Ruby",
+            "PHP",
+            "Swift",
+            "Kotlin",
+            "Scala",
+            "Rust",
           ],
-          3
+          4
         ),
         company: company._id,
         companyName: company.name,
@@ -140,19 +244,25 @@ async function seed() {
           "contract",
           "freelance",
           "remote",
-        ]), // ✅ matches enum
+        ]),
         industry: company.industry,
         postedBy: users[i % users.length]._id,
         status: faker.helpers.arrayElement(["active", "closed", "draft"]),
+        salaryRange: {
+          min: faker.number.int({ min: 30000, max: 80000 }),
+          max: faker.number.int({ min: 80001, max: 200000 }),
+        },
+        applicationInstructions: faker.lorem.sentence(),
+        logoUrl: company.logo,
       })
     );
   }
   await Job.insertMany(jobs);
   console.log("✅ Seeded Jobs");
 
+  // Seed Articles (increase volume)
   const articles = [];
-
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 100; i++) {
     const isUserAuthor = faker.datatype.boolean();
     const authorType = isUserAuthor ? "User" : "Company";
     const author =
@@ -183,27 +293,24 @@ async function seed() {
         author,
         tags: faker.helpers.arrayElements(
           ["career", "jobs", "networking", "skills", "growth"],
-          2
+          3
         ),
       })
     );
   }
-
   await Article.insertMany(articles);
   console.log("✅ Seeded Articles");
 
-  // Seed Applications
+  // Seed Applications (increase volume)
   const applications = [];
-
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 500; i++) {
     const user = users[faker.number.int({ min: 0, max: users.length - 1 })];
     const job = jobs[faker.number.int({ min: 0, max: jobs.length - 1 })];
-
     applications.push(
       new Application({
         job: job._id,
         user: user._id,
-        resume: faker.internet.url() + "/resume.pdf", // fake resume link
+        resume: faker.internet.url() + "/resume.pdf",
         coverLetter: faker.lorem.sentences(2),
         status: faker.helpers.arrayElement([
           "applied",
@@ -215,7 +322,6 @@ async function seed() {
       })
     );
   }
-
   await Application.insertMany(applications);
   console.log("✅ Seeded Applications");
 
