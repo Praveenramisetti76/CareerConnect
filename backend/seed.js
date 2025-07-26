@@ -220,7 +220,7 @@ async function seed() {
   console.log("✅ Seeded Applications");
 
   await mongoose.disconnect();
-  console.log("🎉 Seeding complete!");
+  console.log("✅ Seeding complete!");
 }
 
 seed().catch((err) => {
