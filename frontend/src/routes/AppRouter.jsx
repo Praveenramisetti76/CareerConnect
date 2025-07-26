@@ -129,6 +129,14 @@ const AppRouter = () => {
           </PublicPageWrapper>
         }
       />
+      <Route
+        path="/"
+        element={
+          <PublicPageWrapper>
+            <HomePage />
+          </PublicPageWrapper>
+        }
+      />
 
       {/* Legacy routes - redirect to new auth routes */}
       <Route path="/login" element={<Navigate to="/auth/login" replace />} />
@@ -568,6 +576,9 @@ const AppRouter = () => {
       />
 
       {/* Home Page Route */}
+      <Route path="/" element={<><Navbar /><HomePage /></>} />
+
+      {/* Unauthorized Route */}
       <Route
         path="/"
         element={

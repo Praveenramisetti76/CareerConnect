@@ -16,7 +16,7 @@ const avatarStorage = new CloudinaryStorage({
     return {
       folder: "avatars",
       allowed_formats: ["jpg", "jpeg", "png"],
-      transformation: [{ width: 300, height: 300, crop: "limit" }],
+      transformation: [{ width: 512, height: 512, crop: "limit" }],
     };
   },
 });
@@ -39,7 +39,7 @@ const companyLogoStorage = new CloudinaryStorage({
     return {
       folder: "company_logos",
       allowed_formats: ["jpg", "jpeg", "png"],
-      transformation: [{ width: 400, height: 400, crop: "limit" }],
+      transformation: [{ width: 512, height: 512, crop: "limit" }],
     };
   },
 });
@@ -50,7 +50,7 @@ const companyCoverStorage = new CloudinaryStorage({
     return {
       folder: "company_covers",
       allowed_formats: ["jpg", "jpeg", "png"],
-      transformation: [{ width: 1200, height: 400, crop: "limit" }],
+      transformation: [{ width: 1600, height: 400, crop: "limit" }],
     };
   },
 });
