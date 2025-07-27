@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import StatusDropdown from "./StatusDropdown";
+import StatusDropdown from "../../components/ui/StatusDropdown";
 import {
   Table,
   TableBody,

@@ -1,53 +1,53 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "@/pages/auth/Login";
-import Signup from "@/pages/auth/Signup";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
-import CompanyChoice from "@/pages/recruiter/CompanyChoice";
+import Login from "../pages/auth/Login";
+import Signup from "../pages/auth/Signup";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
+import CompanyChoice from "../pages/recruiter/CompanyChoice";
 import LoadingScreen from "../components/LodingScreen";
-import { useInitializeAuth } from "@/hooks/useInitializeAuth";
-import AccessControl from "@/components/AccessControl";
-import CreateCompany from "@/pages/recruiter/CreateCompany";
-import JoinCompany from "@/pages/recruiter/JoinCompany";
-import AuthGuard from "@/components/AuthGuard";
-import CandidateHomePage from "@/pages/candidate/CandidateHomePage";
-import JobSearchPage from "@/pages/candidate/JobSearchPage";
-import JobDetailPage from "@/pages/candidate/JobDetailPage";
-import ProfilePage from "@/pages/ProfilePage";
-import CandidateLayout from "@/layouts/CandidateLayout";
-import SmartLayoutWrapper from "@/components/SmartLayoutWrapper";
-import useAuthStore from "@/store/userStore";
-import { useCompanyStore } from "@/store/companyStore";
-import EditProfilePage from "@/pages/EditProfilePage";
-import JobsDashboard from "@/pages/recruiter/JobsDashboard";
-import ApplicationsDashboard from "@/pages/recruiter/ApplicationsDashboard";
-import ApplicantProfile from "@/pages/recruiter/ApplicantProfile";
-import PostJob from "@/pages/recruiter/PostJob";
-import RecruiterJobDetailPage from "@/pages/recruiter/RecruiterJobDetailPage";
-import MyApplicationsPage from "@/pages/candidate/MyApplicationsPage";
-import ExploreCompanies from "@/pages/recruiter/ExploreCompanies";
-import CandidateExploreCompanies from "@/pages/candidate/ExploreCompanies";
-import CompanyDetails from "@/pages/recruiter/CompanyDetails";
-import CompanyJobs from "@/pages/recruiter/CompanyJobs";
-import CandidateCompanyJobs from "@/pages/candidate/CompanyJobs";
-import ArticlesPage from "@/pages/shared/ArticlesPage";
-import CreateArticle from "@/pages/recruiter/CreateArticle";
-import ArticleDetails from "@/pages/recruiter/ArticleDetails";
-import MyArticles from "@/pages/recruiter/MyArticles";
-import EditArticle from "@/pages/recruiter/EditArticle";
-import EditCompanyDetails from "@/pages/recruiter/EditCompanyDetails";
-import RoleManagement from "@/pages/recruiter/RoleManagement";
-import RecruiterHomepage from "@/pages/recruiter/RecruiterHomepage";
-import AuthLayout from "@/layouts/AuthLayout";
-import AboutPage from "@/pages/AboutPage";
-import ContactPage from "@/pages/ContactPage";
-import FeaturesPage from "@/pages/FeaturesPage";
-import PublicPageWrapper from "@/components/PublicPageWrapper";
-import NotFound from "@/pages/NotFound";
-import SettingsPage from "@/pages/shared/SettingsPage";
-import Unauthorized from "@/pages/Unauthorized";
-import HomePage from "@/pages/HomePage";
-import Navbar from "@/components/Navbar";
+import { useInitializeAuth } from "../hooks/useInitializeAuth";
+import AccessControl from "../components/AccessControl";
+import CreateCompany from "../pages/recruiter/CreateCompany";
+import JoinCompany from "../pages/recruiter/JoinCompany";
+import AuthGuard from "../components/AuthGuard";
+import CandidateHomePage from "../pages/candidate/CandidateHomePage";
+import JobSearchPage from "../pages/candidate/JobSearchPage";
+import JobDetailPage from "../pages/candidate/JobDetailPage";
+import ProfilePage from "../pages/shared/ProfilePage";
+import CandidateLayout from "../layouts/CandidateLayout";
+import SmartLayoutWrapper from "../components/SmartLayoutWrapper";
+import useAuthStore from "../store/userStore";
+import { useCompanyStore } from "../store/companyStore";
+import EditProfilePage from "../pages/shared/EditProfilePage";
+import JobsDashboard from "../pages/recruiter/JobsDashboard";
+import ApplicationsDashboard from "../pages/recruiter/ApplicationsDashboard";
+import ApplicantProfile from "../pages/recruiter/ApplicantProfile";
+import PostJob from "../pages/recruiter/PostJob";
+import RecruiterJobDetailPage from "../pages/recruiter/RecruiterJobDetailPage";
+import MyApplicationsPage from "../pages/candidate/MyApplicationsPage";
+import ExploreCompanies from "../pages/recruiter/ExploreCompanies";
+import CandidateExploreCompanies from "../pages/candidate/ExploreCompanies";
+import CompanyDetails from "../pages/recruiter/CompanyDetails";
+import CompanyJobs from "../pages/recruiter/CompanyJobs";
+import CandidateCompanyJobs from "../pages/candidate/CompanyJobs";
+import ArticlesPage from "../pages/shared/ArticlesPage";
+import CreateArticle from "../pages/recruiter/CreateArticle";
+import ArticleDetails from "../pages/shared/ArticleDetails";
+import MyArticles from "../pages/recruiter/MyArticles";
+import EditArticle from "../pages/recruiter/EditArticle";
+import EditCompanyDetails from "../pages/recruiter/EditCompanyDetails";
+import RoleManagement from "../pages/recruiter/RoleManagement";
+import RecruiterHomepage from "../pages/recruiter/RecruiterHomepage";
+import AuthLayout from "../layouts/AuthLayout";
+import AboutPage from "../pages/shared/AboutPage";
+import ContactPage from "../pages/shared/ContactPage";
+import FeaturesPage from "../pages/shared/FeaturesPage";
+import PublicPageWrapper from "../components/PublicPageWrapper";
+import NotFound from "../pages/shared/NotFound";
+import SettingsPage from "../pages/shared/SettingsPage";
+import Unauthorized from "../pages/shared/Unauthorized";
+import HomePage from "../pages/shared/HomePage";
+import Navbar from "../components/Navbar";
 
 const AppRouter = () => {
   const { loading } = useInitializeAuth();
@@ -576,7 +576,15 @@ const AppRouter = () => {
       />
 
       {/* Home Page Route */}
-      <Route path="/" element={<><Navbar /><HomePage /></>} />
+      <Route
+        path="/"
+        element={
+          <>
+            <Navbar />
+            <HomePage />
+          </>
+        }
+      />
 
       {/* Unauthorized Route */}
       <Route

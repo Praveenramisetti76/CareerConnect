@@ -30,7 +30,7 @@ const JobSearchPage = () => {
   });
   const [sortBy, setSortBy] = useState("relevance");
   const [currentPage, setCurrentPage] = useState(1);
-  const [filteredJobs, setFilteredJobs] = useState([]);
+  // Remove filteredJobs state, use useMemo instead
 
   // Debounce search term
   useEffect(() => {
@@ -53,25 +53,19 @@ const JobSearchPage = () => {
 
   const jobs = jobsResponse?.data?.jobs || [];
 
-  // Filter and search jobs
-  useEffect(() => {
-    let filtered = jobs;
-
-    // Apply filters
+  const filteredJobs = React.useMemo(() => {
+    let filtered = jobs.slice();
     if (filters.location && filters.location !== "all") {
       filtered = filtered.filter((job) =>
         job.location?.toLowerCase().includes(filters.location.toLowerCase())
       );
     }
-
     if (filters.jobType && filters.jobType !== "all") {
       filtered = filtered.filter((job) => job.type === filters.jobType);
     }
-
     if (filters.industry && filters.industry !== "all") {
       filtered = filtered.filter((job) => job.industry === filters.industry);
     }
-
     if (filters.remote && filters.remote !== "all") {
       if (filters.remote === "remote") {
         filtered = filtered.filter((job) =>
@@ -83,19 +77,16 @@ const JobSearchPage = () => {
         );
       }
     }
-
-    // Apply sorting
     if (sortBy === "newest") {
-      filtered = filtered.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
+      filtered = filtered
+        .slice()
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } else if (sortBy === "salary") {
-      filtered = filtered.sort(
-        (a, b) => (b.salaryRange?.max || 0) - (a.salaryRange?.max || 0)
-      );
+      filtered = filtered
+        .slice()
+        .sort((a, b) => (b.salaryRange?.max || 0) - (a.salaryRange?.max || 0));
     }
-
-    setFilteredJobs(filtered);
+    return filtered;
   }, [jobs, filters, sortBy]);
 
   // Format date
