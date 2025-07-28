@@ -251,7 +251,10 @@ const getMe = async (req, res) => {
     await user.save();
   }
   // If global role is candidate and companyRole is recruiter or admin, update global role to recruiter
-  if (user.role === "candidate" && ["recruiter", "admin"].includes(user.companyRole)) {
+  if (
+    user.role === "candidate" &&
+    ["recruiter", "admin"].includes(user.companyRole)
+  ) {
     user.role = "recruiter";
     await user.save();
   }
@@ -269,14 +272,17 @@ const getMe = async (req, res) => {
 const updateMe = async (req, res) => {
   const userId = req.user._id;
   const { role } = req.body;
+  console.log(role);
   if (!role || !["candidate", "recruiter"].includes(role)) {
     return res.status(400).json({ success: false, message: "Invalid role." });
   }
   const user = await User.findById(userId);
+  console.log(user._id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found." });
   }
   user.role = role;
+  console.log(user.role);
   await user.save();
   res.status(200).json({ success: true, user });
 };

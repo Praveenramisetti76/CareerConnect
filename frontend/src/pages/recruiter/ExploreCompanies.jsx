@@ -237,6 +237,79 @@ const ExploreCompanies = ({ userRole = "recruiter" }) => {
     );
   };
 
+  // Company Size Filter Section as radio buttons
+  const CompanySizeFilterSection = ({
+    title,
+    icon: Icon,
+    items,
+    selectedItem,
+    onSelect,
+    section,
+  }) => (
+    <div className="space-y-2">
+      <Collapsible
+        open={openSections[section]}
+        onOpenChange={() => toggleSection(section)}
+      >
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            className="w-full justify-between p-0 h-auto text-sm font-medium text-gray-900 hover:text-gray-700"
+          >
+            <div className="flex items-center space-x-2">
+              <Icon className="h-4 w-4 text-gray-600" />
+              <span>{title}</span>
+              {selectedItem && (
+                <Badge
+                  variant="secondary"
+                  className="ml-2 h-4 text-xs bg-gray-100 text-gray-700"
+                >
+                  {selectedItem}
+                </Badge>
+              )}
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+                openSections[section] ? "rotate-180" : ""
+              }`}
+            />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1 mt-2">
+          {items.map((item) => (
+            <div key={item} className="flex items-center space-x-2 py-1">
+              <input
+                type="radio"
+                id={`${section}-${item}`}
+                checked={selectedItem === item}
+                onChange={() => onSelect(item)}
+                className="h-3 w-3 text-gray-600 focus:ring-gray-500 border-gray-300 rounded-full"
+                name="company-size-radio"
+              />
+              <Label
+                htmlFor={`${section}-${item}`}
+                className="text-xs text-gray-700 cursor-pointer flex-1 hover:text-gray-900"
+              >
+                {item}
+              </Label>
+            </div>
+          ))}
+          {/* Add clear option for radio selection */}
+          {selectedItem && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto mt-1"
+              onClick={() => onSelect("")}
+            >
+              Clear selection
+            </Button>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+
   // Clean Filters Panel Component
   const FiltersPanel = ({ className = "" }) => (
     <Card className={`border border-gray-200 bg-white ${className}`}>
@@ -315,15 +388,24 @@ const ExploreCompanies = ({ userRole = "recruiter" }) => {
           </>
         )}
 
-        {/* Company Size Filter */}
-        <FilterSection
+        {/* Company Size Filter as radio buttons */}
+        <CompanySizeFilterSection
           title="Company Size"
           icon={Users}
           items={availableSizes}
-          selectedItems={selectedSizes}
-          onToggle={toggleSize}
+          selectedItem={selectedSizes[0] || ""}
+          onSelect={(size) => {
+            // Only one selection allowed, clear previous selection
+            if (selectedSizes[0] === size) {
+              // Deselect if same size clicked
+              toggleSize(size);
+            } else {
+              // Remove all previous selections, then select new
+              selectedSizes.forEach((s) => toggleSize(s));
+              if (size) toggleSize(size);
+            }
+          }}
           section="size"
-          maxShow={10}
         />
       </CardContent>
     </Card>
@@ -573,14 +655,16 @@ const ExploreCompanies = ({ userRole = "recruiter" }) => {
             ) : (
               <>
                 {/* Clean Companies Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8 overflow-hidden">
                   {companies.map((company) => (
                     <CompanyCard
                       key={company._id}
                       company={company}
                       onViewJobs={handleViewJobs}
                       onViewDetails={handleViewDetails}
-                      className="transition-shadow duration-200 hover:shadow-md"
+                      className="transition-shadow duration-200 hover:shadow-md overflow-hidden max-w-full"
+                      nameClassName="truncate block whitespace-nowrap overflow-hidden max-w-full"
+                      style={{ textOverflow: "ellipsis" }}
                     />
                   ))}
                 </div>

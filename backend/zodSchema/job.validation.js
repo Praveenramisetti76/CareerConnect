@@ -95,6 +95,12 @@ const deleteJobSchema = z.object({
   }),
 });
 
+export const deleteJobByIdSchema = z.object({
+  params: z.object({
+    id: objectId(),
+  }),
+});
+
 const deleteApplicationSchema = z.object({
   params: z.object({
     jobId: objectId(),

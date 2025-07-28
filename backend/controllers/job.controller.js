@@ -13,6 +13,7 @@ import {
   getJobPostsSchema,
   deleteJobSchema,
   deleteApplicationSchema,
+  deleteJobByIdSchema,
 } from "../zodSchema/job.validation.js";
 import Company from "../models/Company.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
@@ -20,13 +21,35 @@ import { jobOptions } from "../utils/queryOperations/jobOptions.js";
 import mongoose from "mongoose";
 import { sendCustomEmail } from "../utils/sendEmail.js";
 
+export const deleteJobById = async (req, res) => {
+  const parsed = deleteJobByIdSchema.safeParse({ params: req.params });
+  if (!parsed.success) {
+    console.error(parsed.error);
+    throw new AppError("Validation failed", 400, parsed.error.errors);
+  }
+  const { id } = parsed.data.params;
+  const deleted = await catchAndWrap(
+    () => Job.findByIdAndDelete(id),
+    "Failed to delete job",
+    404
+  );
+  if (!deleted) throw new AppError("Job not found", 404);
+  res.status(200).json({
+    success: true,
+    message: "Job deleted successfully",
+  });
+};
+
 export const applyToJob = async (req, res) => {
   const userId = req.user._id;
   const { jobId } = req.params;
 
   // Check if user has a resume
   if (!req.user.resumeUrl) {
-    throw new AppError("You must upload a resume before applying for a job.", 400);
+    throw new AppError(
+      "You must upload a resume before applying for a job.",
+      400
+    );
   }
 
   const parsed = applySchema.safeParse(req.body);
@@ -421,13 +444,11 @@ export const getJobsByCompany = async (req, res) => {
     res.status(200).json({ success: true, jobs });
   } catch (error) {
     console.error("❌ Error fetching jobs:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error fetching jobs",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching jobs",
+      error: error.message,
+    });
   }
 };
 
@@ -580,12 +601,16 @@ export const sendApplicationStatusEmail = async (req, res) => {
     .populate("user")
     .populate("job");
   if (!application) {
-    return res.status(404).json({ success: false, message: "Application not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Application not found" });
   }
   const user = application.user;
   const job = application.job;
   if (!user?.email) {
-    return res.status(400).json({ success: false, message: "Applicant email not found" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Applicant email not found" });
   }
 
   // Email template
@@ -594,8 +619,12 @@ export const sendApplicationStatusEmail = async (req, res) => {
     <div style="font-family: Arial, sans-serif;">
       <h2>Application Status Update</h2>
       <p>Dear ${user.name || "Applicant"},</p>
-      <p>Your application for the position of <strong>${job.title}</strong> at <strong>${job.companyName}</strong> has been updated.</p>
-      <p><strong>New Status:</strong> <span style="color: #2563eb;">${application.status.charAt(0).toUpperCase() + application.status.slice(1)}</span></p>
+      <p>Your application for the position of <strong>${
+        job.title
+      }</strong> at <strong>${job.companyName}</strong> has been updated.</p>
+      <p><strong>New Status:</strong> <span style="color: #2563eb;">${
+        application.status.charAt(0).toUpperCase() + application.status.slice(1)
+      }</span></p>
       <p>If you have any questions, feel free to reply to this email.</p>
       <br/>
       <p>Best regards,<br/>${job.companyName} Recruitment Team</p>
@@ -603,5 +632,7 @@ export const sendApplicationStatusEmail = async (req, res) => {
   `;
 
   await sendCustomEmail(user.email, subject, html);
-  res.status(200).json({ success: true, message: "Status update email sent to applicant." });
+  res
+    .status(200)
+    .json({ success: true, message: "Status update email sent to applicant." });
 };

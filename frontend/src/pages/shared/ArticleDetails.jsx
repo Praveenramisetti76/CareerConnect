@@ -46,7 +46,9 @@ const ArticleDetails = () => {
     mutationFn: () => toggleLike(articleId),
     onSuccess: (data) => {
       queryClient.invalidateQueries(["article", articleId]);
-      toast.success(data?.message || (data?.isLiked ? "Article liked!" : "Like removed!"));
+      toast.success(
+        data?.message || (data?.isLiked ? "Article liked!" : "Like removed!")
+      );
     },
     onError: () => {
       toast.error("Failed to like article");
@@ -257,7 +259,13 @@ const ArticleDetails = () => {
               <img
                 src={article.featuredImage}
                 alt={article.title}
-                className="w-full h-auto max-h-[500px] object-cover"
+                className="w-full object-cover"
+                style={{
+                  width: "100%",
+                  height: "400px",
+                  maxHeight: "500px",
+                  aspectRatio: "16/9",
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>

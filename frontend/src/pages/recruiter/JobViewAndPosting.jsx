@@ -23,6 +23,9 @@ const JobViewAndPosting = () => {
   const { companyRole } = useCompanyStore();
   const [jobView, setJobView] = useState("all"); // "all" or "my-posts"
 
+  // Industry search state
+  const [industrySearch, setIndustrySearch] = useState("");
+
   // Fetch all jobs or user's job posts based on view
   const {
     data: jobsResponse,
@@ -35,6 +38,13 @@ const JobViewAndPosting = () => {
   });
 
   const jobs = jobsResponse?.data?.jobs || [];
+
+  // Filtered jobs by industry search
+  const filteredJobs = industrySearch
+    ? jobs.filter((job) =>
+        job.industry && job.industry.toLowerCase().includes(industrySearch.toLowerCase())
+      )
+    : jobs;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -90,6 +100,17 @@ const JobViewAndPosting = () => {
 
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-slate-50">
+      {/* Industry Search Filter */}
+      <div className="px-6 pt-6 max-w-[960px] mx-auto">
+        <input
+          type="text"
+          value={industrySearch}
+          onChange={(e) => setIndustrySearch(e.target.value)}
+          placeholder="Search by industry..."
+          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4"
+        />
+      </div>
+
       <div className="layout-container flex h-full grow flex-col">
         <div className="gap-1 px-6 flex flex-1 justify-center py-5">
           {/* Main Content */}
@@ -167,7 +188,7 @@ const JobViewAndPosting = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {jobs.length === 0 ? (
+                    {filteredJobs.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={jobView === "my-posts" ? 7 : 5}
@@ -177,7 +198,7 @@ const JobViewAndPosting = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      jobs.map((job) => (
+                      filteredJobs.map((job) => (
                         <TableRow
                           key={job._id}
                           className="border-t border-t-[#cedce8] hover:bg-gray-50"

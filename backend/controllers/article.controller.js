@@ -148,7 +148,10 @@ export const getSingleArticle = async (req, res) => {
     await updatedArticle.populate("comments.user", "name email");
 
     let populatedAuthor = null;
-    if (updatedArticle.authorType === "User" || updatedArticle.authorType === "user") {
+    if (
+      updatedArticle.authorType === "User" ||
+      updatedArticle.authorType === "user"
+    ) {
       populatedAuthor = await User.findById(updatedArticle.author).select(
         "name email"
       );
@@ -183,11 +186,21 @@ export const updateArticle = async (req, res) => {
   }
   const { articleId } = parsed.data.params;
   const updateData = parsed.data.body;
+  // Use company id if present, else fallback to user id
+  const authorId = req.user.company ? req.user.company : req.user._id;
+  console.log(
+    "req.user._id:",
+    req.user._id,
+    "req.user.company:",
+    req.user.company,
+    "authorId used:",
+    authorId
+  );
 
   const article = await catchAndWrap(
     () =>
       Article.findOneAndUpdate(
-        { _id: articleId, author: req.user._id },
+        { _id: articleId, author: authorId },
         updateData,
         { new: true }
       ),
@@ -203,12 +216,13 @@ export const deleteArticle = async (req, res) => {
   if (!parsed.success) {
     throw new AppError("Invalid article ID", 400, parsed.error.errors);
   }
+  const authorId = req.user.company ? req.user.company : req.user._id;
 
   const deleted = await catchAndWrap(
     () =>
       Article.findOneAndDelete({
         _id: parsed.data.articleId,
-        author: req.user._id,
+        author: authorId,
       }),
     "Failed to delete article"
   );

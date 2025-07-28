@@ -20,12 +20,14 @@ import {
 import { toast } from "sonner";
 import useAuthStore from "@/store/userStore";
 import { getMyArticles, deleteArticle } from "@/api/articleApi";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const MyArticles = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(null); // articleId or null
 
   // Fetch user's articles
   const {
@@ -92,9 +94,18 @@ const MyArticles = () => {
   };
 
   const handleDelete = (articleId) => {
-    if (window.confirm("Are you sure you want to delete this article?")) {
-      deleteMutation.mutate(articleId);
+    setDeleteDialogOpen(articleId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteDialogOpen) {
+      deleteMutation.mutate(deleteDialogOpen);
+      setDeleteDialogOpen(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(null);
   };
 
   const handleCreateNew = () => {
@@ -277,18 +288,28 @@ const MyArticles = () => {
                           >
                             <Edit size={16} />
                           </Button>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(article._id);
+                          <ConfirmDialog
+                            open={deleteDialogOpen === article._id}
+                            onOpenChange={(open) => {
+                              if (!open) setDeleteDialogOpen(null);
                             }}
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-600 hover:text-red-900 hover:bg-red-50"
-                            disabled={deleteMutation.isPending}
+                            onConfirm={handleConfirmDelete}
+                            title="Delete Article?"
+                            description="Are you sure you want to delete this article? This action cannot be undone."
                           >
-                            <Trash2 size={16} />
-                          </Button>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(article._id);
+                              }}
+                              size="sm"
+                              variant="destructive"
+                              className="bg-black text-white hover:bg-zinc-900"
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </ConfirmDialog>
                         </div>
                       </div>
 
@@ -359,6 +380,19 @@ const MyArticles = () => {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {deleteDialogOpen !== null && (
+          <ConfirmDialog
+            open={true}
+            onConfirm={handleConfirmDelete}
+            onCancel={handleCancelDelete}
+            title="Confirm Delete"
+            description="Are you sure you want to delete this article? This action cannot be undone."
+            confirmButtonText="Delete"
+            cancelButtonText="Cancel"
+          />
         )}
       </div>
     </div>

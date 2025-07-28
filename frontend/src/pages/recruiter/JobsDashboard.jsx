@@ -3,7 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Edit2 } from "lucide-react";
-import { getAllJobs, getMyJobPosts, updateJobStatus } from "@/api/jobApi";
+import {
+  getAllJobs,
+  getMyJobPosts,
+  updateJobStatus,
+  deleteJob,
+} from "@/api/jobApi";
 import useAuthStore from "@/store/userStore";
 import { useCompanyStore } from "@/store/companyStore";
 import { Button } from "@/components/ui/button";
@@ -33,6 +38,20 @@ const VIEW_TYPES = {
 };
 
 const JobsDashboard = () => {
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, job: null });
+  // Delete job handler
+  const handleDeleteJob = async (jobId) => {
+    try {
+      await deleteJob(jobId);
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobView] });
+      toast.success("Job deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting job:", err);
+      toast.error("Failed to delete job.");
+    } finally {
+      setDeleteDialog({ open: false, job: null });
+    }
+  };
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { companyRole } = useCompanyStore();
@@ -321,14 +340,80 @@ const JobsDashboard = () => {
                                 {job.applicationsCount || 0}
                               </TableCell>
                               <TableCell className="h-[72px] px-4 py-2 w-[120px] text-[#0d151c] text-sm font-normal leading-normal">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => handleEditClick(e, job._id)}
-                                  className="hover:bg-blue-100"
+                                <div className="flex gap-2 justify-center items-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => handleEditClick(e, job._id)}
+                                    className="hover:bg-blue-100"
+                                  >
+                                    <Edit2 className="w-5 h-5 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setDeleteDialog({ open: true, job });
+                                    }}
+                                    className="hover:bg-red-100"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="w-5 h-5 text-red-600"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                      />
+                                    </svg>
+                                  </Button>
+                                </div>
+                                {/* Delete Confirmation Dialog */}
+                                <Dialog
+                                  open={deleteDialog.open}
+                                  onOpenChange={() =>
+                                    setDeleteDialog({ open: false, job: null })
+                                  }
                                 >
-                                  <Edit2 className="w-5 h-5 text-blue-600" />
-                                </Button>
+                                  <DialogContent className="sm:max-w-[425px]">
+                                    <DialogHeader>
+                                      <DialogTitle>Delete Job Post</DialogTitle>
+                                      <DialogDescription>
+                                        Are you sure you want to delete the job
+                                        "{deleteDialog.job?.title}"? This action
+                                        cannot be undone.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() =>
+                                          setDeleteDialog({
+                                            open: false,
+                                            job: null,
+                                          })
+                                        }
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() =>
+                                          handleDeleteJob(deleteDialog.job?._id)
+                                        }
+                                      >
+                                        Delete
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
                               </TableCell>
                             </>
                           )}

@@ -252,37 +252,6 @@ const CompanyDetails = () => {
 
         {/* Action Buttons - Top Right */}
         <div className="absolute top-6 right-6 flex items-center space-x-3">
-          {/* Only show Follow/Share buttons for candidates or non-admin recruiters */}
-          {(user?.role === "candidate" ||
-            (user?.role === "recruiter" &&
-              !(companyRole === "admin" && userCompanyId === companyId))) && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFollowed(!isFollowed)}
-                className={`rounded-full px-4 py-2 border backdrop-blur-sm transition-all duration-200 ${
-                  isFollowed
-                    ? "bg-white/90 border-white text-blue-600 hover:bg-white"
-                    : "bg-white/20 border-white/30 text-white hover:bg-white/30"
-                }`}
-              >
-                <Heart
-                  className={`w-4 h-4 mr-2 ${isFollowed ? "fill-current" : ""}`}
-                />
-                {isFollowed ? "Following" : "Follow"}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors duration-200"
-              >
-                <Share2 className="w-4 h-4 text-white" />
-              </Button>
-            </>
-          )}
-
           {/* Edit Button for Admins only */}
           {user?.role === "recruiter" &&
             companyRole === "admin" &&

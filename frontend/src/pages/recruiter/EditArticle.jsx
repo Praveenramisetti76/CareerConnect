@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Eye, FileText, Tag, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import { getArticleById, updateArticle } from "@/api/articleApi";
+import { getArticleById, updateArticle, deleteArticle } from "@/api/articleApi";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const EditArticle = () => {
   const { articleId } = useParams();
@@ -32,6 +33,8 @@ const EditArticle = () => {
   });
   const [newTag, setNewTag] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const categories = [
     "Interview Tips",
@@ -57,25 +60,61 @@ const EditArticle = () => {
 
   // Update article mutation
   const updateMutation = useMutation({
-    mutationFn: (data) => updateArticle(articleId, data),
-    onSuccess: () => {
+    mutationFn: (data) => {
+      console.log("[EditArticle] updateMutation.mutationFn called", {
+        articleId,
+        data,
+      });
+      return updateArticle(articleId, data);
+    },
+    onSuccess: (data) => {
+      console.log("[EditArticle] updateMutation onSuccess", data);
       queryClient.invalidateQueries(["article", articleId]);
       queryClient.invalidateQueries(["myArticles"]);
       toast.success("Article updated successfully!");
       navigate("/recruiter/my-articles");
     },
     onError: (error) => {
+      console.error("[EditArticle] updateMutation onError", error);
       toast.error(error.response?.data?.message || "Failed to update article");
+    },
+  });
+
+  // Delete article mutation
+  const deleteMutation = useMutation({
+    mutationFn: () => {
+      console.log("[EditArticle] deleteMutation.mutationFn called", {
+        articleId,
+      });
+      return deleteArticle(articleId);
+    },
+    onSuccess: () => {
+      console.log("[EditArticle] deleteMutation onSuccess");
+      queryClient.invalidateQueries(["myArticles"]);
+      toast.success("Article deleted successfully!");
+      navigate("/recruiter/my-articles");
+    },
+    onError: (error) => {
+      console.error("[EditArticle] deleteMutation onError", error);
+      toast.error(error.response?.data?.message || "Failed to delete article");
     },
   });
 
   // Set form data when article is loaded
   useEffect(() => {
     if (article) {
+      console.log("[EditArticle] Loaded article:", article);
+      // Normalize category to match one of the categories exactly
+      const matchedCategory =
+        categories.find(
+          (cat) =>
+            cat.trim().toLowerCase() ===
+            (article.category || "").trim().toLowerCase()
+        ) || "";
       setFormData({
         title: article.title || "",
         content: article.content || "",
-        category: article.category || "",
+        category: matchedCategory,
         tags: article.tags || [],
       });
     }
@@ -115,28 +154,55 @@ const EditArticle = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("[EditArticle] handleSubmit called");
+    console.log("[EditArticle] Current articleId:", articleId);
+    console.log("[EditArticle] Current formData:", formData);
 
     // Basic validation
     if (!formData.title.trim()) {
+      console.warn("[EditArticle] Validation failed: title missing");
       toast.error("Please enter a title");
       return;
     }
 
     if (!formData.content.trim()) {
+      console.warn("[EditArticle] Validation failed: content missing");
       toast.error("Please enter content");
       return;
     }
 
     if (!formData.category) {
+      console.warn("[EditArticle] Validation failed: category missing");
       toast.error("Please select a category");
       return;
     }
 
+    console.log(
+      "[EditArticle] Validation passed, calling updateMutation.mutate"
+    );
     updateMutation.mutate(formData);
   };
 
   const handleBack = () => {
     navigate("/recruiter/my-articles");
+  };
+
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteArticle = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteArticle(articleId);
+      toast.success("Article deleted successfully!");
+      navigate("/recruiter/my-articles");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete article");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
   };
 
   if (isLoading) {
@@ -491,6 +557,30 @@ const EditArticle = () => {
                         </>
                       )}
                     </Button>
+
+                    <ConfirmDialog
+                      open={deleteDialogOpen}
+                      onOpenChange={setDeleteDialogOpen}
+                      onConfirm={handleDeleteArticle}
+                      title="Delete Article?"
+                      description="Are you sure you want to delete this article? This action cannot be undone."
+                    >
+                      <Button
+                        type="button"
+                        onClick={handleDelete}
+                        className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        ) : (
+                          <>
+                            <X size={16} />
+                            Delete Article
+                          </>
+                        )}
+                      </Button>
+                    </ConfirmDialog>
 
                     <div className="text-xs text-slate-500 text-center">
                       Your changes will be saved and the article will remain

@@ -17,21 +17,43 @@ export const profileValidationSchema = z.object({
     .optional(),
 });
 
-export const experienceSchema = z.object({
-  title: z.string().min(1, "Job title is required"),
-  company: z.string().min(1, "Company name is required"),
-  location: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional().or(z.literal("")),
-  description: z.string().optional(),
-});
+export const experienceSchema = z
+  .object({
+    title: z.string().min(1, "Job title is required"),
+    company: z.string().min(1, "Company name is required"),
+    location: z.string().optional(),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().optional().or(z.literal("")),
+    description: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.endDate) return true;
+      return new Date(data.startDate) <= new Date(data.endDate);
+    },
+    {
+      message: "Start date must be before end date",
+      path: ["endDate"],
+    }
+  );
 
-export const educationSchema = z.object({
-  degree: z.string().min(1, "Degree is required"),
-  school: z.string().min(1, "School name is required"),
-  fieldOfStudy: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional().or(z.literal("")),
-  grade: z.string().optional(),
-  description: z.string().optional(),
-});
+export const educationSchema = z
+  .object({
+    degree: z.string().min(1, "Degree is required"),
+    school: z.string().min(1, "School name is required"),
+    fieldOfStudy: z.string().optional(),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().optional().or(z.literal("")),
+    grade: z.string().optional(),
+    description: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.endDate) return true;
+      return new Date(data.startDate) <= new Date(data.endDate);
+    },
+    {
+      message: "Start date must be before end date",
+      path: ["endDate"],
+    }
+  );

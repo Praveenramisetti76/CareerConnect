@@ -276,6 +276,8 @@ const ProfilePage = () => {
         setUser(userData);
       }
       setResumeUrl(null);
+      // Clear resume id from localStorage
+      localStorage.removeItem("resumeUrl");
       toast.success("Resume deleted successfully");
     },
     onError: (error) => {

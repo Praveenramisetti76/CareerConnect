@@ -836,10 +836,14 @@ const EditCompanyDetails = () => {
                     />
                     <Input
                       value={formData.phone}
-                      onChange={(e) =>
-                        handleInputChange("phone", e.target.value)
-                      }
-                      placeholder="+1 (555) 123-4567"
+                      onChange={(e) => {
+                        const value = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        handleInputChange("phone", value);
+                      }}
+                      maxLength={10}
+                      placeholder="Enter 10-digit mobile number"
                       className="h-12 pl-12 pr-4 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-0 text-slate-800 font-medium placeholder:text-slate-400 placeholder:font-normal transition-all duration-200 hover:border-slate-300"
                     />
                   </div>

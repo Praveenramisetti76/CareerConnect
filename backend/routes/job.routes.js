@@ -18,6 +18,7 @@ import {
   getJobById,
   getAllJobs,
   sendApplicationStatusEmail,
+  deleteJobById,
 } from "../controllers/job.controller.js";
 
 import { authentication } from "../middleware/auth.js";
@@ -40,6 +41,7 @@ router.put(
   editJob
 );
 router.get("/my-posts", getMyJobPosts);
+router.delete("/:id", deleteJobById); // Use new controller for job deletion by id only
 router.get("/all", getAllJobs);
 router.get("/", getJobsByCompany); // Move this before /:id route
 router.get("/:id", getJobById);

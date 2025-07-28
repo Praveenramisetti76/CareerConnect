@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  MapPin,
-  Users,
-  Briefcase,
+  MapPinned,
+  UserSquare,
+  Award,
   ExternalLink,
   Star,
   Building2,
@@ -118,7 +118,7 @@ const CompanyCard = ({ company, className, onViewJobs, onViewDetails }) => {
               variant="secondary"
               className="text-xs font-normal bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
-              <MapPin className="h-3 w-3 mr-1 text-gray-600" />
+              <MapPinned className="h-3 w-3 mr-1 text-indigo-600" />
               {location}
             </Badge>
           )}
@@ -127,7 +127,7 @@ const CompanyCard = ({ company, className, onViewJobs, onViewDetails }) => {
               variant="secondary"
               className="text-xs font-normal bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
-              <Users className="h-3 w-3 mr-1 text-gray-600" />
+              <UserSquare className="h-3 w-3 mr-1 text-indigo-600" />
               {size} employees
             </Badge>
           )}
@@ -135,7 +135,7 @@ const CompanyCard = ({ company, className, onViewJobs, onViewDetails }) => {
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-1 text-sm text-gray-600">
-            <Briefcase className="h-4 w-4 text-gray-600" />
+            <Award className="h-4 w-4 text-indigo-600" />
             <span className="font-medium">{jobCount}</span>
             <span>{jobCount === 1 ? "job" : "jobs"}</span>
           </div>

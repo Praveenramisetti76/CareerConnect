@@ -59,7 +59,7 @@ export const createArticle = async (articleData) => {
 // Update article
 export const updateArticle = async (articleId, articleData) => {
   try {
-    const response = await api.put(`/article/${articleId}`, articleData);
+    const response = await api.patch(`/article/${articleId}`, articleData);
     console.log("📰 Article updated successfully:", response.data);
     return response.data;
   } catch (error) {

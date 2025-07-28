@@ -269,8 +269,8 @@ export const getAllCompanies = async (req, res) => {
     // Add pagination
     aggregationPipeline.push({ $skip: skip }, { $limit: limitNum });
 
-    // Execute query
-    const companies = await Company.aggregate(aggregationPipeline);
+    // Execute query with case-insensitive collation for correct sorting
+    const companies = await Company.aggregate(aggregationPipeline).collation({ locale: "en", strength: 2 });
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / limitNum);
