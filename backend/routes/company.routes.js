@@ -67,14 +67,14 @@ router.get(
   getJoinRequests
 );
 router.put(
-  "/:companyId/requests/:requestId",
-  checkCompanyRole("admin", "recruiter"),
-  handleJoinRequest
-);
-router.put(
   "/:companyId/requests/respond",
   authentication,
   respondToCompanyJoinRequest
+);
+router.put(
+  "/:companyId/requests/:requestId",
+  checkCompanyRole("admin", "recruiter"),
+  handleJoinRequest
 );
 
 router.put(

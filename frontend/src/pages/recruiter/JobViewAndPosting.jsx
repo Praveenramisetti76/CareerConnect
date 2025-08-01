@@ -41,8 +41,10 @@ const JobViewAndPosting = () => {
 
   // Filtered jobs by industry search
   const filteredJobs = industrySearch
-    ? jobs.filter((job) =>
-        job.industry && job.industry.toLowerCase().includes(industrySearch.toLowerCase())
+    ? jobs.filter(
+        (job) =>
+          job.industry &&
+          job.industry.toLowerCase().includes(industrySearch.toLowerCase())
       )
     : jobs;
 

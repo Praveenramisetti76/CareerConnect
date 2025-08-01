@@ -10,10 +10,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Bell, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, User, Bell, Settings as SettingsIcon, Check, X } from "lucide-react";
 import { getAvatarBackgroundStyle } from "@/utils/avatarUtils";
 import { useQuery } from "@tanstack/react-query";
-import { getMyJoinRequestStatus } from "@/api/companyApi";
+import { getMyJoinRequestStatus, respondToCompanyJoinRequest } from "@/api/companyApi";
 
 const Navbar = () => {
   const location = useLocation();
@@ -22,11 +22,57 @@ const Navbar = () => {
   const { companyRole } = useCompanyStore();
 
   // Fetch company join requests for notification icon
-  const { data: joinRequests = [], isLoading: loadingRequests } = useQuery({
+  const { data: joinRequests = [], isLoading: loadingRequests, refetch: refetchRequests } = useQuery({
     queryKey: ["myCompanyJoinRequests"],
     queryFn: getMyJoinRequestStatus,
     enabled: !!user,
   });
+
+  const [processingRequests, setProcessingRequests] = React.useState(new Set());
+
+  const handleAcceptRequest = async (companyId) => {
+    setProcessingRequests(prev => new Set(prev).add(companyId));
+    try {
+      await respondToCompanyJoinRequest(companyId, "accepted");
+      refetchRequests();
+      // You can add a toast notification here if you have a toast system
+      console.log("Request accepted successfully");
+      
+      // Reload the page to update the interface
+      window.location.reload();
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      // You can add error toast notification here
+    } finally {
+      setProcessingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(companyId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRejectRequest = async (companyId) => {
+    setProcessingRequests(prev => new Set(prev).add(companyId));
+    try {
+      await respondToCompanyJoinRequest(companyId, "rejected");
+      refetchRequests();
+      // You can add a toast notification here if you have a toast system
+      console.log("Request rejected successfully");
+      
+      // Reload the page to update the interface
+      window.location.reload();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      // You can add error toast notification here
+    } finally {
+      setProcessingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(companyId);
+        return newSet;
+      });
+    }
+  };
 
   // Check if we should show the navbar
   const shouldShowNavbar = () => {
@@ -246,12 +292,33 @@ const Navbar = () => {
                                 Role: {req.roleTitle}
                               </div>
                             </div>
-                            <Link
-                              to="/profile"
-                              className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
-                            >
-                              View
-                            </Link>
+                            {user.role === "candidate" ? (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleAcceptRequest(req.company._id)}
+                                  disabled={processingRequests.has(req.company._id)}
+                                  className="px-2 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 rounded-md font-medium text-xs transition-all duration-200 shadow-none hover:shadow-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  {processingRequests.has(req.company._id) ? "Processing..." : "Accept"}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectRequest(req.company._id)}
+                                  disabled={processingRequests.has(req.company._id)}
+                                  className="px-2 py-1 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-md font-medium text-xs transition-all duration-200 shadow-none hover:shadow-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <X className="w-3 h-3" />
+                                  {processingRequests.has(req.company._id) ? "Processing..." : "Reject"}
+                                </button>
+                              </div>
+                            ) : (
+                              <Link
+                                to="/profile"
+                                className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
+                              >
+                                View
+                              </Link>
+                            )}
                           </div>
                         ))
                     )}

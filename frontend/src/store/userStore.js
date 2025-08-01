@@ -127,7 +127,17 @@ const useAuthStore = create(
           get().setToken(token);
           const profile = await api.get("/auth/me");
           const userData = profile.data;
-          set({ user: userData, isInitialized: true });
+          set({
+            user: userData,
+            isInitialized: true,
+            resumeUrl: userData.resumeUrl || null,
+          });
+          // Save resumeUrl to localStorage
+          if (userData.resumeUrl) {
+            localStorage.setItem("resumeUrl", userData.resumeUrl);
+          } else {
+            localStorage.removeItem("resumeUrl");
+          }
           // Update company store if user has company data
           if (userData.company && userData.companyRole) {
             useCompanyStore
@@ -141,7 +151,8 @@ const useAuthStore = create(
         } catch (error) {
           console.error("🔑 Login failed:", error);
           localStorage.removeItem("token");
-          set({ token: null, user: null });
+          localStorage.removeItem("resumeUrl");
+          set({ token: null, user: null, resumeUrl: null });
           delete api.defaults.headers.common["Authorization"];
           throw error;
         }

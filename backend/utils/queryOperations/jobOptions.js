@@ -19,8 +19,10 @@ export const jobOptions = (query = {}) => {
 
   if (query.minSalary || query.maxSalary) {
     filter["salaryRange.min"] = {};
-    if (query.minSalary) filter["salaryRange.min"].$gte = Number(query.minSalary);
-    if (query.maxSalary) filter["salaryRange.min"].$lte = Number(query.maxSalary);
+    if (query.minSalary)
+      filter["salaryRange.min"].$gte = Number(query.minSalary);
+    if (query.maxSalary)
+      filter["salaryRange.min"].$lte = Number(query.maxSalary);
   }
 
   return filter;

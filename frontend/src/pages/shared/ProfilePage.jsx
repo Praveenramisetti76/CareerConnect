@@ -580,6 +580,9 @@ const ProfilePage = () => {
       toast.success("Response sent!");
       queryClient.invalidateQueries(["myCompanyJoinRequests"]);
       queryClient.invalidateQueries(["profile"]);
+      
+      // Reload the page to update the interface
+      window.location.reload();
     },
     onError: (error) => {
       console.error("[DEBUG] Respond mutation error:", error);

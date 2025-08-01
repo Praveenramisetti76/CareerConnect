@@ -365,35 +365,39 @@ const CandidateHomePage = () => {
               <div className="p-6">
                 {recentApplications?.length > 0 ? (
                   <div className="space-y-4">
-                    {recentApplications.slice(0, 4).map((application) => (
-                      <div
-                        key={application._id}
-                        className="p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/job/${application.job._id}`)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900 text-sm">
-                              {application.job.title}
-                            </h4>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {application.job.company?.name ||
-                                application.job.companyName}
-                            </p>
-                            <div className="flex items-center mt-2">
-                              {getStatusIcon(application.status)}
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ml-2 ${getStatusColor(
-                                  application.status
-                                )}`}
-                              >
-                                {application.status}
-                              </span>
+                    {recentApplications.slice(0, 4).map((application) =>
+                      application.job ? (
+                        <div
+                          key={application._id}
+                          className="p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                          onClick={() =>
+                            navigate(`/job/${application.job._id}`)
+                          }
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 text-sm">
+                                {application.job.title}
+                              </h4>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {application.job.company?.name ||
+                                  application.job.companyName}
+                              </p>
+                              <div className="flex items-center mt-2">
+                                {getStatusIcon(application.status)}
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ml-2 ${getStatusColor(
+                                    application.status
+                                  )}`}
+                                >
+                                  {application.status}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ) : null
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">

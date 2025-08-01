@@ -101,10 +101,18 @@ export const getMyCompanyRole = async (companyId) => {
 
 export const getMyJoinRequestStatus = async () => {
   const response = await api.get("/company/my-join-requests");
+  console.log("🔍 API Response:", response.data);
   return response.data.requests;
 };
 
 export const respondToCompanyJoinRequest = async (companyId, status) => {
-  const response = await api.put(`/company/${companyId}/requests/respond`, { status });
-  return response.data;
+  console.log("🔍 Frontend: Calling respondToCompanyJoinRequest with:", { companyId, status });
+  try {
+    const response = await api.put(`/company/${companyId}/requests/respond`, { status });
+    console.log("✅ Frontend: Request successful:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Frontend: Request failed:", error.response?.data || error.message);
+    throw error;
+  }
 };

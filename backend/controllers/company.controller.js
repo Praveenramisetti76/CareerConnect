@@ -72,11 +72,32 @@ export const getMyCompanyRole = async (req, res) => {
     (m) => m.user.toString() === userId.toString()
   );
 
-  if (!member) {
-    throw new AppError("You are not a member of this company", 403);
+  if (member) {
+    return res.status(200).json({ role: member.role });
   }
 
-  res.status(200).json({ role: member.role });
+  // Check if user has a pending join request
+  const pendingRequest = company.joinRequests.find(
+    (r) => r.user.toString() === userId.toString() && r.status === "pending"
+  );
+
+  if (pendingRequest) {
+    return res.status(200).json({ 
+      role: "pending", 
+      message: "You have a pending join request for this company" 
+    });
+  }
+
+  // Check if user has an accepted join request but not yet added to members
+  const acceptedRequest = company.joinRequests.find(
+    (r) => r.user.toString() === userId.toString() && r.status === "accepted"
+  );
+
+  if (acceptedRequest) {
+    return res.status(200).json({ role: acceptedRequest.roleTitle });
+  }
+
+  throw new AppError("You are not a member of this company", 403);
 };
 
 export const createCompany = async (req, res) => {
@@ -270,7 +291,10 @@ export const getAllCompanies = async (req, res) => {
     aggregationPipeline.push({ $skip: skip }, { $limit: limitNum });
 
     // Execute query with case-insensitive collation for correct sorting
-    const companies = await Company.aggregate(aggregationPipeline).collation({ locale: "en", strength: 2 });
+    const companies = await Company.aggregate(aggregationPipeline).collation({
+      locale: "en",
+      strength: 2,
+    });
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / limitNum);
@@ -513,18 +537,20 @@ export const handleJoinRequest = async (req, res) => {
   const { companyId, requestId } = req.params;
   const { status } = req.body; // "accepted" or "rejected"
 
-  if (!['accepted', 'rejected'].includes(status)) {
-    throw new AppError('Invalid status', 400);
+  if (!["accepted", "rejected"].includes(status)) {
+    throw new AppError("Invalid status", 400);
   }
 
-  const company = await Company.findById(companyId).populate('joinRequests.user');
-  if (!company) throw new AppError('Company not found', 404);
+  const company = await Company.findById(companyId).populate(
+    "joinRequests.user"
+  );
+  if (!company) throw new AppError("Company not found", 404);
 
   const request = company.joinRequests.id(requestId);
-  if (!request) throw new AppError('Join request not found', 404);
+  if (!request) throw new AppError("Join request not found", 404);
 
-  if (request.status !== 'pending') {
-    throw new AppError('Request already handled', 400);
+  if (request.status !== "pending") {
+    throw new AppError("Request already handled", 400);
   }
 
   request.status = status;
@@ -532,14 +558,14 @@ export const handleJoinRequest = async (req, res) => {
 
   // Update user's companyJoinRequests status
   await User.updateOne(
-    { _id: request.user._id, 'companyJoinRequests.company': companyId },
-    { $set: { 'companyJoinRequests.$.status': status } }
+    { _id: request.user._id, "companyJoinRequests.company": companyId },
+    { $set: { "companyJoinRequests.$.status": status } }
   );
 
-  if (status === 'accepted') {
+  if (status === "accepted") {
     // Add user to company members
     company.members.push({ user: request.user._id, role: request.roleTitle });
-    if (request.roleTitle === 'admin') {
+    if (request.roleTitle === "admin") {
       company.admins.push(request.user._id);
     }
     await company.save();
@@ -550,8 +576,8 @@ export const handleJoinRequest = async (req, res) => {
       companyRole: request.roleTitle,
     };
     // If the user is joining as recruiter or admin, update global role to recruiter
-    if (['recruiter', 'admin'].includes(request.roleTitle)) {
-      userUpdate.role = 'recruiter';
+    if (["recruiter", "admin"].includes(request.roleTitle)) {
+      userUpdate.role = "recruiter";
     }
     await User.findByIdAndUpdate(request.user._id, userUpdate);
   }
@@ -680,7 +706,9 @@ export const getMyJoinRequestStatus = async (req, res) => {
     // Find companies where user has join requests
     const companies = await Company.find({
       "joinRequests.user": userId,
-    }).select("name joinRequests");
+    }).select("name joinRequests").lean();
+
+    console.log("🔍 Found companies for user:", companies.map(c => ({ id: c._id, name: c.name })));
 
     const userRequests = [];
 
@@ -690,9 +718,23 @@ export const getMyJoinRequestStatus = async (req, res) => {
       );
 
       if (userRequest) {
-        userRequests.push({
-          companyId: company._id,
+        console.log("🔍 Processing request for company:", { 
+          companyId: company._id, 
           companyName: company.name,
+          hasName: !!company.name,
+          nameType: typeof company.name
+        });
+        
+        if (!company.name) {
+          console.error("❌ Company name is missing for company:", company._id);
+        }
+        
+        userRequests.push({
+          _id: userRequest._id,
+          company: {
+            _id: company._id,
+            name: company.name,
+          },
           roleTitle: userRequest.roleTitle,
           status: userRequest.status,
           requestedAt: userRequest.requestedAt,
@@ -700,11 +742,14 @@ export const getMyJoinRequestStatus = async (req, res) => {
       }
     });
 
+    console.log("🔍 Final user requests:", userRequests);
+
     res.status(200).json({
       success: true,
       requests: userRequests,
     });
   } catch (error) {
+    console.error("Error in getMyJoinRequestStatus:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch join request status",
@@ -746,40 +791,81 @@ export const respondToCompanyJoinRequest = async (req, res) => {
   const { companyId } = req.params;
   const { status } = req.body; // "accepted" or "rejected"
 
-  if (!['accepted', 'rejected'].includes(status)) {
-    throw new AppError('Invalid status', 400);
+  console.log("🔍 respondToCompanyJoinRequest called with:", {
+    userId: userId.toString(),
+    companyId,
+    status,
+    userRole: req.user.role
+  });
+
+  if (!["accepted", "rejected"].includes(status)) {
+    throw new AppError("Invalid status", 400);
   }
 
   // Update user's join request status
+  console.log("🔍 Updating user's join request status...");
+  
+  // First, let's check what join requests the user currently has
+  const userBefore = await User.findById(userId);
+  console.log("🔍 User's current join requests:", userBefore?.companyJoinRequests || []);
+  
   const user = await User.findOneAndUpdate(
-    { _id: userId, 'companyJoinRequests.company': companyId },
-    { $set: { 'companyJoinRequests.$.status': status } },
+    { _id: userId, "companyJoinRequests.company": companyId },
+    { $set: { "companyJoinRequests.$.status": status } },
     { new: true }
-  ).populate('companyJoinRequests.company');
+  ).populate("companyJoinRequests.company");
 
-  if (!user) throw new AppError('Join request not found', 404);
+  if (!user) {
+    console.log("❌ User not found or join request not found");
+    throw new AppError("Join request not found", 404);
+  }
+  
+  console.log("✅ User updated successfully:", user._id);
+  console.log("🔍 User's updated join requests:", user.companyJoinRequests || []);
 
   // Update company joinRequests status
+  console.log("🔍 Updating company join request status...");
   const company = await Company.findById(companyId);
-  if (!company) throw new AppError('Company not found', 404);
+  if (!company) throw new AppError("Company not found", 404);
+  
+  console.log("🔍 Company found:", company.name);
+  console.log("🔍 Looking for user's pending request...");
+  
   const reqObj = company.joinRequests.find(
-    (r) => r.user.toString() === userId.toString() && r.status === 'pending'
+    (r) => r.user.toString() === userId.toString() && r.status === "pending"
   );
-  if (!reqObj) throw new AppError('Join request not found in company', 404);
+  
+  if (!reqObj) {
+    console.log("❌ Join request not found in company for user:", userId.toString());
+    console.log("🔍 Available requests:", company.joinRequests.map(r => ({
+      user: r.user.toString(),
+      status: r.status,
+      roleTitle: r.roleTitle
+    })));
+    throw new AppError("Join request not found in company", 404);
+  }
+  
+  console.log("✅ Found pending request:", reqObj.roleTitle);
   reqObj.status = status;
   await company.save();
+  console.log("✅ Company updated successfully");
 
-  if (status === 'accepted') {
+  if (status === "accepted") {
+    console.log("🔍 Adding user to company members...");
     // Add user to company members
     company.members.push({ user: userId, role: reqObj.roleTitle });
-    if (reqObj.roleTitle === 'admin') {
+    if (reqObj.roleTitle === "admin") {
       company.admins.push(userId);
     }
     await company.save();
+    console.log("✅ User added to company members");
+    
     // Update user's company and companyRole
+    console.log("🔍 Updating user's company and role...");
     user.company = company._id;
     user.companyRole = reqObj.roleTitle;
     await user.save();
+    console.log("✅ User's company and role updated");
   }
 
   res.status(200).json({ success: true, message: `Request ${status}` });
@@ -791,22 +877,31 @@ export const inviteUserToCompany = async (req, res) => {
   const { userId, roleTitle } = req.body;
 
   if (!userId || !roleTitle) {
-    throw new AppError('User ID and roleTitle are required', 400);
+    throw new AppError("User ID and roleTitle are required", 400);
   }
 
   const company = await Company.findById(companyId);
-  if (!company) throw new AppError('Company not found', 404);
+  if (!company) throw new AppError("Company not found", 404);
 
   // Check if user is already a member or has a pending/accepted request
-  const alreadyMember = company.members.some(m => m.user.toString() === userId);
-  const existingRequest = company.joinRequests.find(
-    r => r.user.toString() === userId && ["pending", "accepted"].includes(r.status)
+  const alreadyMember = company.members.some(
+    (m) => m.user.toString() === userId
   );
-  if (alreadyMember || (existingRequest && existingRequest.status === "accepted")) {
+  const existingRequest = company.joinRequests.find(
+    (r) =>
+      r.user.toString() === userId && ["pending", "accepted"].includes(r.status)
+  );
+  if (
+    alreadyMember ||
+    (existingRequest && existingRequest.status === "accepted")
+  ) {
     throw new AppError("User is already part of this company", 400);
   }
   if (existingRequest && existingRequest.status === "pending") {
-    throw new AppError("A pending join request already exists for this user", 400);
+    throw new AppError(
+      "A pending join request already exists for this user",
+      400
+    );
   }
 
   // Add join request to company

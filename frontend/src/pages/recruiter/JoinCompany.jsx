@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ import { Building2, ArrowLeft, Send, Search, X } from "lucide-react";
 const JoinCompany = () => {
   const navigate = useNavigate();
   const { setCompanyData } = useCompanyStore();
-  const { user } = useAuthStore();
+  const { user, refreshUserData } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -37,6 +37,9 @@ const JoinCompany = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasShownAcceptedNotification, setHasShownAcceptedNotification] = useState(false);
+  const notificationShownRef = useRef(false);
+  const lastAcceptedCompanyRef = useRef(null);
 
   // Fetch companies
   const { data: companiesResponse, isLoading: companiesLoading } = useQuery({
@@ -53,6 +56,13 @@ const JoinCompany = () => {
     queryKey: ["myJoinRequests"],
     queryFn: getMyJoinRequestStatus,
   });
+
+  // Debug: Log join requests data
+  useEffect(() => {
+    if (joinRequests.length > 0) {
+      console.log("📋 Join requests data:", joinRequests);
+    }
+  }, [joinRequests]);
 
   const companies = companiesResponse?.companies || [];
 
@@ -86,16 +96,91 @@ const JoinCompany = () => {
     return () => clearTimeout(timeoutId);
   }, [companySearch]);
 
+  // Reset notification flag when component mounts
+  useEffect(() => {
+    setHasShownAcceptedNotification(false);
+    notificationShownRef.current = false;
+    lastAcceptedCompanyRef.current = null;
+  }, []);
+
+  // Redirect to dashboard when accepted
+  useEffect(() => {
+    const acceptedRequest = joinRequests.find(
+      (req) => req.status === "accepted"
+    );
+    
+    // Only show notification if this is a new acceptance (different company or first time)
+    const isNewAcceptance = acceptedRequest && 
+      (!lastAcceptedCompanyRef.current || 
+       lastAcceptedCompanyRef.current !== acceptedRequest.companyId);
+    
+    if (isNewAcceptance && !notificationShownRef.current) {
+      console.log("🎉 Acceptance notification - company data:", acceptedRequest);
+      const companyName = acceptedRequest.companyName;
+      toast.success(
+        `You have been accepted into ${companyName}! Redirecting to dashboard...`
+      );
+      notificationShownRef.current = true;
+      setHasShownAcceptedNotification(true);
+      lastAcceptedCompanyRef.current = acceptedRequest.companyId;
+      
+      // Refresh user data to get updated company information
+      if (refreshUserData) {
+        refreshUserData();
+      }
+      
+      // Update company store with the accepted company data
+      setCompanyData(acceptedRequest.companyId, acceptedRequest.roleTitle);
+      
+      // Use setTimeout to ensure the toast is shown before navigation
+      setTimeout(() => {
+        navigate("/recruiter/dashboard");
+      }, 1000);
+    }
+  }, [joinRequests, navigate, refreshUserData, setCompanyData]);
+
   // Join request mutation
   const joinMutation = useMutation({
     mutationFn: ({ companyId, roleTitle }) =>
-      requestToJoinCompany(companyId, roleTitle),
-    onSuccess: () => {
-      toast.success(
-        "Join request submitted successfully! Please wait for approval."
-      );
-      refetchJoinStatus(); // Refresh join request status after submitting
-      navigate("/recruiter/company-choice");
+      requestToJoinCompany(companyId, { roleTitle }),
+    onSuccess: (_, variables) => {
+      // Reset the notification flags for new requests
+      setHasShownAcceptedNotification(false);
+      notificationShownRef.current = false;
+      lastAcceptedCompanyRef.current = null;
+      
+      // Refetch join status to get the latest data
+      refetchJoinStatus().then((res) => {
+        const requests = res?.data || joinRequests;
+        const newRequest = requests.find(
+          (req) =>
+            req.companyId === variables.companyId &&
+            req.roleTitle === variables.roleTitle
+        );
+        
+        // Check if the request was immediately accepted
+        if (newRequest && newRequest.status === "accepted") {
+          // Don't show toast here - let useEffect handle the accepted case
+          // Update company store with the accepted company data
+          setCompanyData(newRequest.companyId, newRequest.roleTitle);
+          
+          // Refresh user data to get updated company information
+          if (refreshUserData) {
+            refreshUserData();
+          }
+          
+          // Use setTimeout to ensure proper redirect
+          setTimeout(() => {
+            navigate("/recruiter/dashboard");
+          }, 500);
+        } else {
+          // Show success toast only for pending requests
+          toast.success(
+            "Join request submitted successfully! Please wait for approval."
+          );
+          navigate("/recruiter/company-choice");
+        }
+      });
     },
     onError: (error) => {
       toast.error(
@@ -144,7 +229,6 @@ const JoinCompany = () => {
   const handleCheckStatus = async () => {
     try {
       await refetchJoinStatus();
-      toast.success("Status updated!");
     } catch (error) {
       toast.error("Failed to check status");
     }
@@ -258,16 +342,6 @@ const JoinCompany = () => {
                       </div>
                     ))}
                   </div>
-
-                  {joinRequests.some((req) => req.status === "accepted") && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 text-sm">
-                        🎉 Great! You've been accepted to a company. Please
-                        refresh the page or navigate to your dashboard to access
-                        your new company features.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

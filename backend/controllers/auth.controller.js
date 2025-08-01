@@ -266,6 +266,7 @@ const getMe = async (req, res) => {
     company: user.company ? user.company._id : null,
     companyRole: user.companyRole || null,
     twoFactorEnabled: user.twoFactorEnabled || false,
+    resumeUrl: user.resumeUrl || null,
   });
 };
 
@@ -360,18 +361,19 @@ const resetPassword = async (req, res) => {
 
   const user = await catchAndWrap(
     () =>
-      User.findOne({
-        _id: id,
-        resetPasswordToken: hashedToken,
-        resetPasswordExpires: { $gt: Date.now() },
-      }),
-    "User not found",
-    404
-  );
-
-  user.password = await bcrypt.hash(password, 10);
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
+  res.status(200).json({
+    message: "Login successful",
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      company: user.company,
+      companyRole: user.companyRole,
+      resumeUrl: user.resumeUrl || null,
+    },
+  }));
 
   await user.save();
 
