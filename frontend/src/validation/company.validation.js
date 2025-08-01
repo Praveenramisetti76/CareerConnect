@@ -1,30 +1,29 @@
 import { z } from "zod";
 
 export const CreateCompanySchema = z.object({
-  name: z.string().trim().min(1, "Company name is required"),
+  name: z.string().trim().min(2, "Company name must be at least 2 characters long"),
 
-  industry: z.string().min(1, "Industry is required"),
+  industry: z.string().trim().min(2, "Industry must be at least 2 characters long"),
 
   size: z
     .enum(["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"])
     .optional(),
 
-  location: z.string().optional(),
+  location: z.string().trim().min(1, "Location is required"),
 
   website: z
     .string()
-    .optional()
-    .refine((val) => !val || z.string().url().safeParse(val).success, {
-      message: "Invalid website URL",
+    .min(1, "Website is required")
+    .refine((val) => z.string().url().safeParse(val).success, {
+      message: "Please enter a valid website URL (e.g., https://www.example.com)",
     }),
 
   foundedYear: z
     .number()
-    .min(1950, "Year too old")
-    .max(new Date().getFullYear(), "Year can't be in the future")
-    .optional(),
+    .min(1950, "Founded year must be 1950 or later")
+    .max(new Date().getFullYear(), "Founded year cannot be in the future"),
 
-  description: z.string().optional(),
+  description: z.string().trim().min(10, "Company description must be at least 10 characters long"),
 
   logo: z.string().optional(),
   logoPublicId: z.string().optional(),
@@ -33,9 +32,9 @@ export const CreateCompanySchema = z.object({
 
   socialLinks: z
     .object({
-      linkedin: z.url().optional(),
-      twitter: z.url().optional(),
-      github: z.url().optional(),
+      linkedin: z.string().url("Please enter a valid LinkedIn URL").optional().or(z.literal("")),
+      twitter: z.string().url("Please enter a valid Twitter URL").optional().or(z.literal("")),
+      github: z.string().url("Please enter a valid GitHub URL").optional().or(z.literal("")),
     })
     .optional(),
 

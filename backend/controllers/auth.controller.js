@@ -277,15 +277,27 @@ const updateMe = async (req, res) => {
   if (!role || !["candidate", "recruiter"].includes(role)) {
     return res.status(400).json({ success: false, message: "Invalid role." });
   }
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).populate("company");
   console.log(user._id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found." });
   }
   user.role = role;
+  
   console.log(user.role);
   await user.save();
-  res.status(200).json({ success: true, user });
+  
+  // Return the same format as getMe for consistency
+  res.status(200).json({
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    company: user.company ? user.company._id : null,
+    companyRole: user.companyRole || null,
+    twoFactorEnabled: user.twoFactorEnabled || false,
+    resumeUrl: user.resumeUrl || null,
+  });
 };
 
 const logOut = async (req, res) => {

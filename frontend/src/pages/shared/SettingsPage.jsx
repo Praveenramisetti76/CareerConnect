@@ -91,8 +91,24 @@ const SettingsPage = () => {
     try {
       const res = await api.patch("/auth/me", { role: newRole });
       toast.success(`Role changed to ${newRole}`);
+      
       // Update the user in the store with the backend response
-      useAuthStore.getState().setUser(res.data.user);
+      useAuthStore.getState().setUser(res.data);
+      
+      // Navigate to the appropriate dashboard based on the new role
+      if (newRole === "candidate") {
+        navigate("/candidate/home");
+      } else if (newRole === "recruiter") {
+        // Check if user has a company association
+        const hasCompany = res.data.company || useCompanyStore.getState().companyId;
+        if (hasCompany) {
+          // User has a company, go to dashboard
+          navigate("/recruiter/dashboard");
+        } else {
+          // No company, go to company choice
+          navigate("/recruiter/company-choice");
+        }
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to change role.");
     }

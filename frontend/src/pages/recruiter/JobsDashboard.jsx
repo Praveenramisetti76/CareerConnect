@@ -162,7 +162,8 @@ const JobsDashboard = () => {
     if (jobView === VIEW_TYPES.MY_POSTS) {
       navigate(`/recruiter/edit-job/${jobId}`);
     } else {
-      navigate(`/job/${jobId}`);
+      // For recruiters viewing all jobs, use the recruiter job detail route
+      navigate(`/recruiter/job/${jobId}`);
     }
   };
 

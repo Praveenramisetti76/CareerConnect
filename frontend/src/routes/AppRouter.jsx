@@ -634,6 +634,11 @@ const RecruiterDashboardWrapper = () => {
     return <Navigate to="/recruiter/company-choice" replace />;
   }
 
+  // If user has company but store doesn't have it, update the store
+  if (user?.company && !companyId) {
+    useCompanyStore.getState().setCompanyData(user.company, user.companyRole);
+  }
+
   return <RecruiterHomepage />;
 };
 

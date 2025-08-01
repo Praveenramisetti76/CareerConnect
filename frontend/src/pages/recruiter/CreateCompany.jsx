@@ -154,6 +154,13 @@ const CreateCompany = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Required Fields Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-blue-800 text-sm">
+              <span className="font-semibold">Note:</span> Fields marked with an asterisk (*) are required.
+            </p>
+          </div>
+          
           {/* Company Logo Section */}
           <div className="mb-8">
             <h2 className="text-[#101518] text-xl font-semibold mb-4">
@@ -259,22 +266,24 @@ const CreateCompany = () => {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Enter company name"
+                  placeholder="Enter company name *"
                   {...register("name")}
                   className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
                 />
-                {errors.name && (
+                {errors.name ? (
                   <p className="text-sm text-red-600">{errors.name.message}</p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Minimum 2 characters required</p>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="size" className="text-[#101518] font-medium">
-                  Company Size
+                  Company Size *
                 </Label>
                 <Select onValueChange={(value) => setValue("size", value)}>
                   <SelectTrigger className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518]">
-                    <SelectValue placeholder="Select company size" />
+                    <SelectValue placeholder="Select company size *" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1-10">1-10 employees</SelectItem>
@@ -285,8 +294,10 @@ const CreateCompany = () => {
                     <SelectItem value="1000+">1000+ employees</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.size && (
+                {errors.size ? (
                   <p className="text-sm text-red-600">{errors.size.message}</p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Please select a company size</p>
                 )}
               </div>
 
@@ -299,14 +310,16 @@ const CreateCompany = () => {
                 </Label>
                 <Input
                   id="industry"
-                  placeholder="e.g., Technology, Healthcare, Finance"
+                  placeholder="e.g., Technology, Healthcare, Finance *"
                   {...register("industry")}
                   className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
                 />
-                {errors.industry && (
+                {errors.industry ? (
                   <p className="text-sm text-red-600">
                     {errors.industry.message}
                   </p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Minimum 2 characters required</p>
                 )}
               </div>
 
@@ -319,31 +332,35 @@ const CreateCompany = () => {
                 </Label>
                 <Input
                   id="location"
-                  placeholder="e.g., San Francisco, CA"
+                  placeholder="e.g., San Francisco, CA *"
                   {...register("location")}
                   className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
                 />
-                {errors.location && (
+                {errors.location ? (
                   <p className="text-sm text-red-600">
                     {errors.location.message}
                   </p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Required</p>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="website" className="text-[#101518] font-medium">
-                  Website
+                  Website *
                 </Label>
                 <Input
                   id="website"
-                  placeholder="https://www.example.com"
+                  placeholder="https://www.example.com *"
                   {...register("website")}
                   className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
                 />
-                {errors.website && (
+                {errors.website ? (
                   <p className="text-sm text-red-600">
                     {errors.website.message}
                   </p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Must be a valid URL</p>
                 )}
               </div>
 
@@ -352,11 +369,11 @@ const CreateCompany = () => {
                   htmlFor="foundedYear"
                   className="text-[#101518] font-medium"
                 >
-                  Founded Year
+                  Founded Year *
                 </Label>
                 <Input
                   id="foundedYear"
-                  placeholder="e.g., 2020"
+                  placeholder="e.g., 2020 *"
                   type="number"
                   {...register("foundedYear", {
                     setValueAs: (value) =>
@@ -364,10 +381,12 @@ const CreateCompany = () => {
                   })}
                   className="h-11 bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
                 />
-                {errors.foundedYear && (
+                {errors.foundedYear ? (
                   <p className="text-sm text-red-600">
                     {errors.foundedYear.message}
                   </p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">Must be between 1950 and current year</p>
                 )}
               </div>
             </div>
@@ -381,20 +400,26 @@ const CreateCompany = () => {
               </Label>
               <Textarea
                 id="description"
-                placeholder="Tell us about your company, its mission, values, and what makes it unique..."
+                placeholder="Tell us about your company, its mission, values, and what makes it unique... *"
                 {...register("description")}
                 className="min-h-32 resize-none bg-gray-50 border-[#d5dce2] text-[#101518] placeholder:text-[#5c758a]"
               />
-              {errors.description && (
-                <p className="text-sm text-red-600">
-                  {errors.description.message}
-                </p>
-              )}
+              <div className="flex justify-between items-center">
+                {errors.description ? (
+                  <p className="text-sm text-red-600">
+                    {errors.description.message}
+                  </p>
+                ) : (
+                  <p className="text-sm text-[#5c758a]">
+                    Minimum 10 characters required
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">
               <Label className="text-[#101518] font-medium">
-                Social Media Links
+                Social Media Links (Optional)
               </Label>
 
               <div className="space-y-3">
